@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark light">
+<title>NoSQL lesson studio</title>
+<meta name="description" content="Lessons from NoSQL for data engineers, with live consoles connected to the guide's MongoDB, Redis, Cassandra, DynamoDB Local, Neo4j and DuckDB.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='6' width='4' height='20' rx='2' fill='%231baf7a'/%3E%3Crect x='9' y='10' width='4' height='16' rx='2' fill='%23eb6834'/%3E%3Crect x='15' y='13' width='4' height='13' rx='2' fill='%232a78d6'/%3E%3Crect x='21' y='9' width='4' height='17' rx='2' fill='%23eda100'/%3E%3Crect x='27' y='16' width='2' height='10' rx='1' fill='%236250d6'/%3E%3C/svg%3E">
+<script src="/static/theme.js"></script>
+<link rel="stylesheet" href="/static/styles.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#lesson">Skip to the lesson</a>
+<a class="skip-link" href="#editor">Skip to the console</a>
+
+<header class="topbar">
+  <a class="brand" href="#/" aria-label="NoSQL lesson studio, home">
+    <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="brand-text">NoSQL lesson studio</span>
+  </a>
+  <nav class="chapters" aria-label="Chapters"><ol id="chapter-nav"></ol></nav>
+  <div class="top-actions">
+    <a class="top-link optional" id="link-guide" href="#" target="_blank" rel="noreferrer noopener">Guide</a>
+    <a class="top-link optional" id="link-explorer" href="#" target="_blank" rel="noreferrer noopener">Explorer</a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="studio" id="studio">
+  <section class="pane lesson-pane" id="lesson" aria-label="Lesson" tabindex="-1">
+    <div class="lesson-inner" id="lesson-inner"><p class="muted">Loading the studio...</p></div>
+  </section>
+
+  <section class="pane console-pane" aria-label="Console">
+    <div class="console-tabs" role="tablist" aria-label="Consoles" id="console-tabs"></div>
+    <div class="console-body">
+      <div class="working" id="working" hidden>
+        <span class="what" id="working-what"></span>
+        <button class="btn small primary" type="button" id="working-check">Check my answer</button>
+        <button class="btn small ghost" type="button" id="working-close" aria-label="Stop working on this exercise">Close</button>
+      </div>
+      <div class="editor-wrap">
+        <div class="gutter" id="gutter" aria-hidden="true">1</div>
+        <label class="visually-hidden" for="editor">Console input</label>
+        <textarea class="editor" id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-describedby="keys-help"></textarea>
+      </div>
+      <div class="toolbar">
+        <button class="btn primary small" type="button" id="run-btn">Run <span class="kbd-hint" id="run-keys">Ctrl+Enter</span></button>
+        <button class="btn ghost small" type="button" id="clear-btn">Clear results</button>
+        <span class="lang" id="lang"></span>
+        <span class="spacer"></span>
+        <span class="keys" id="keys-help">Ctrl/Cmd+Enter runs. Up and Down on the first or last line walk the history. Esc leaves the editor.</span>
+      </div>
+      <details class="subset" id="subset-help" hidden>
+        <summary>What this mongosh subset understands</summary>
+        <div>
+          <p><code>db.&lt;collection&gt;</code> with <code>find</code>, <code>findOne</code>, <code>aggregate</code>, <code>countDocuments</code>, <code>estimatedDocumentCount</code>, <code>distinct</code>, <code>insertOne</code>, <code>insertMany</code>, <code>updateOne</code>, <code>updateMany</code>, <code>replaceOne</code>, <code>deleteOne</code>, <code>deleteMany</code>, <code>createIndex</code>, <code>getIndexes</code>, <code>dropIndex</code>, <code>dropIndexes</code>, <code>drop</code>; cursor <code>.sort</code> <code>.limit</code> <code>.skip</code> <code>.project</code> <code>.explain()</code> <code>.toArray()</code>; <code>show collections</code>, <code>db.getCollectionNames()</code>, <code>db.getCollection('x')</code>, <code>db.createCollection(name, options)</code>.</p>
+          <p>Arguments are JavaScript literals: unquoted keys, single or double quotes, trailing commas, comments, <code>ISODate(...)</code>, <code>new Date(...)</code>, <code>NumberDecimal(...)</code>, <code>ObjectId(...)</code>, <code>NumberInt</code>, <code>NumberLong</code>, <code>/regex/i</code>, <code>true</code>, <code>false</code>, <code>null</code>. Not supported: variables, functions, arithmetic, loops, <code>use</code>.</p>
+        </div>
+      </details>
+      <div class="results" id="results" aria-live="polite"><p class="empty">Results appear here. Pick an example in the lesson, or type and press Ctrl+Enter.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="statusbar" aria-label="Database status" id="statusbar"></footer>
+</body>
+</html>

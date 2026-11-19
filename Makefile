@@ -12,7 +12,7 @@ ALL_PROFILES := --profile ch02 --profile ch03 --profile ch04 --profile ch05 --pr
 
 .DEFAULT_GOAL := help
 .PHONY: help setup datagen ps logs down clean test test-unit test-integration lint format capstone \
-        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data
+        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data studio
 # lab-% and check-% are pattern rules; make skips pattern rules for .PHONY targets,
 # so they are deliberately not listed above.
 
@@ -60,6 +60,12 @@ check-%: ## Check your exercise answers, e.g. make check-02
 capstone: up-capstone ## Run the end-to-end capstone pipeline (starts its containers)
 	$(RUN) nosqlde capstone
 
+# ---- lesson studio ---------------------------------------------------------------
+STUDIO_PORT ?= 8790
+
+studio: ## Lessons with live consoles in the browser (start databases first: make up-NN)
+	$(RUN) nosqlde studio --port $(STUDIO_PORT)
+
 # ---- explorer --------------------------------------------------------------------
 EXPLORER_PORT ?= 8099
 
@@ -89,6 +95,6 @@ format: ## Apply ruff formatting and safe fixes
 	$(RUN) ruff format .
 	$(RUN) ruff check --fix .
 
-clean: ## Remove lab output and tool caches (not the containers: use make down)
+clean: ## Remove lab output and tool caches (not the containers or .studio/ progress)
 	rm -rf lake .pytest_cache .mypy_cache .ruff_cache
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +

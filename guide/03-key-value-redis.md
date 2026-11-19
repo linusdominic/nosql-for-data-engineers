@@ -2,6 +2,8 @@
 
 Time: about 1.5 hours (30 minutes reading, 20 minutes lab, 40 minutes exercises).
 
+In the lesson studio (`make up-03`, then `make studio`): chapter 03, 8 exercises in a redis-cli console.
+
 ```bash
 make up-03      # Redis 8.2.11 on localhost:6479
 make lab-03

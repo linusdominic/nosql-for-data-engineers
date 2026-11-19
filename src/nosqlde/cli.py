@@ -4,6 +4,7 @@ nosqlde datagen                 print the synthetic data summary
 nosqlde lab 02                  run chapter 2's lab
 nosqlde check 02 [--solutions]  check your exercise answers for chapter 2
 nosqlde capstone [--scale N]    run the end-to-end capstone pipeline
+nosqlde studio [--port 8790]    the lesson studio: lessons and live consoles in a browser
 """
 
 from __future__ import annotations
@@ -48,6 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--solutions", action="store_true", help="check solutions/ instead")
     cap = sub.add_parser("capstone", help="run the end-to-end capstone")
     cap.add_argument("--scale", type=int, default=2_000, help="number of borrowers (default 2000)")
+    studio = sub.add_parser("studio", help="start the lesson studio on 127.0.0.1")
+    studio.add_argument("--port", type=int, default=8790, help="port on 127.0.0.1 (default 8790)")
     args = parser.parse_args(argv)
 
     start = time.perf_counter()
@@ -78,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
             from nosqlde.capstone import pipeline
 
             return pipeline.main(scale=args.scale)
+        if args.command == "studio":
+            from nosqlde.studio import server
+
+            return server.serve(port=args.port)
     except ServiceUnavailable as err:
         print(f"\nERROR: {err}", file=sys.stderr)
         return 2

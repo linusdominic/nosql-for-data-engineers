@@ -2,6 +2,8 @@
 
 Time: about 1 hour of reading, plus a 5-minute quiz (`make check-08`). No database needed.
 
+In the lesson studio (`make studio`): chapter 08, this chapter's quiz with the same explanations as `make check-08`.
+
 This chapter pulls the guide together: how to choose a store, what each one is bad at,
 what the managed versions cost you in money and operations, two families the labs did
 not cover, a glossary, and review questions with answers.

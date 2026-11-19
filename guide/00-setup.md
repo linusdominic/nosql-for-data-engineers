@@ -23,10 +23,10 @@ cd nosql-for-data-engineers
 make setup
 ```
 
-`make setup` runs `uv sync --python 3.12`, which creates `.venv/` and installs the 32
-packages pinned in `uv.lock`. On the author's machine (Apple silicon, macOS), with a
-fresh `.venv` but uv's download cache already warm, it took under a second
-(`Installed 32 packages in 118ms`). The first run on a new machine also downloads
+`make setup` runs `uv sync --python 3.12`, which creates `.venv/` and installs the 47
+packages pinned in `uv.lock` (version 0.3.0, which added the lesson studio's web server).
+On the author's machine (Apple silicon, macOS), with a fresh `.venv` but uv's download
+cache already warm, it took under a second (`Installed 47 packages in 105ms`). The first run on a new machine also downloads
 Python 3.12 and the packages, which depends on your network.
 
 Check that the toolchain works without any database:
@@ -94,6 +94,50 @@ make down       # stop and delete the containers (and their data)
 Chapters 1 and 8 are quizzes (`make check-01`, `make check-08`) and need no database.
 Chapter 7 is the capstone (`make capstone`).
 
+## The lesson studio: the chapters in a browser, with live consoles
+
+The same loop works in a browser. Start the databases a chapter needs, then the studio:
+
+```bash
+make up-02          # or make up-capstone up-05 for every database
+make studio         # prints http://127.0.0.1:8790/?token=...; open that address
+```
+
+Each chapter becomes a lesson with steps. A step has a few paragraphs, a link to the
+section of the guide it comes from, "Run this" examples that load into the console and
+run with one click, and exercises. The console on the right talks to the real database
+in its own language: mongosh for MongoDB (a subset, interpreted in Python), redis-cli
+syntax for Redis, CQL for Cassandra (with `TRACING ON` and `CONSISTENCY`), PartiQL or a
+JSON API mode for DynamoDB Local, Cypher for Neo4j, and SQL over the lake for DuckDB.
+Ctrl+Enter (Cmd+Enter on a Mac) runs it; Up and Down walk the history.
+
+How to use it next to the chapters:
+
+- **Read the chapter section first, then do its step.** The studio keeps the prose short
+  on purpose; the guide has the explanation and the lab output the studio's numbers match.
+- **Press Prepare data once per chapter.** It loads that chapter's data with the lab's
+  own code and the seeded generator, into names of its own (database `larkspur_studio`,
+  Redis database 5, keyspace `larkspur_studio`, table `larkspur_studio`), so a lab or a
+  check never disturbs it and your counts match the guide. Press it again whenever you
+  want a clean start. Neo4j Community has a single database, so chapter 6's Prepare, its
+  lab and check, and the capstone all reset the same graph.
+- **Check my answer** runs your statement and the reference solution and compares the
+  results (or the state the database is left in, for writes). It says PASS or FAIL, with
+  what was expected and what you got. Up to three hints open one at a time; the solution
+  opens after your first attempt.
+- **Chapter 7** runs the capstone from the browser (the same command as `make capstone`),
+  shows each stage as it streams, then has exercises over the lake in DuckDB. Chapters 1
+  and 8 are their quizzes.
+- **Run the whole lab** streams `make lab-NN` into the page, for the full step-by-step
+  output the guide quotes.
+
+Your progress is kept in `.studio/progress.json` (ignored by git). The studio listens on
+127.0.0.1 only and needs the token from the printed address; the token changes every
+time it starts. `make studio STUDIO_PORT=8791` picks another port. Stop it with Ctrl+C,
+and stop the databases with `make down` as usual. The offline
+[explorer](https://linusdominic.github.io/nosql-for-data-engineers/explorer/) is a
+separate companion with simulations and needs no database.
+
 ## The data: Larkspur Lending (fictional)
 
 All data comes from `src/nosqlde/datagen.py`, a seeded generator for an invented consumer
@@ -158,3 +202,5 @@ You rarely need more than one at a time: `make down` between chapters keeps it t
   with about 8 GB for containers. Linux was exercised only through the CI workflow
   definition, which has not been run by the author (see the README). Windows was not tried.
 - Download times depend on your network and are not quoted.
+- The lesson studio was tried in Google Chrome only (157, headless, at 1440, 1280 and
+  1024 pixels wide and at phone width); the README lists its limits.

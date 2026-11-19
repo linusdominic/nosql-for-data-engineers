@@ -1,6 +1,9 @@
 # Lab and capstone output (Parquet, DuckDB files, pipeline state)
 lake/
 
+# Lesson studio progress (make studio)
+.studio/
+
 # Python
 .venv/
 __pycache__/

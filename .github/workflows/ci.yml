@@ -41,6 +41,7 @@ jobs:
       - run: uv sync --python 3.12 --locked
       - name: Start every database (same compose file as the guide)
         run: docker compose --profile ch02 --profile ch03 --profile ch04 --profile ch05 --profile ch06 up -d --wait
+      # every lab, check and the capstone, then every lesson studio exercise
       - run: uv run pytest tests/integration -q
       - name: Container logs
         if: failure()

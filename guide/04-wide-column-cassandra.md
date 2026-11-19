@@ -2,6 +2,8 @@
 
 Time: about 2 hours (45 minutes reading, 20 minutes lab, 50 minutes exercises).
 
+In the lesson studio (`make up-04`, then `make studio`): chapter 04, 9 exercises in a CQL console with `TRACING ON` and `CONSISTENCY`.
+
 ```bash
 make up-04      # Cassandra 5.0.9 on localhost:9142; takes about a minute to become healthy
 make lab-04

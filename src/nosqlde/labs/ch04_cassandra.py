@@ -27,6 +27,50 @@ MAX_TOKEN = 2**63 - 1
 PAYMENT_COLUMNS = "loan_id, event_time, event_id, event_day, instalment_no, amount_cents, method"
 
 
+# Step 4.1: one table per access pattern, the same rows in each.
+DDL = {
+    "payments_by_loan": "PRIMARY KEY ((loan_id), event_time, event_id)) "
+    "WITH CLUSTERING ORDER BY (event_time DESC, event_id ASC)",
+    "payments_by_day": "PRIMARY KEY ((event_day), event_time, event_id))",
+    "payments_by_method": "PRIMARY KEY ((method), event_time, event_id))",
+}
+
+
+def create_and_load(s: Any, events: list[dict[str, Any]]) -> int:
+    """Create step 4.1's three tables in the session's keyspace and insert every event."""
+    from cassandra.concurrent import execute_concurrent_with_args
+
+    for name, key in DDL.items():
+        s.execute(
+            f"CREATE TABLE {name} (loan_id text, event_time timestamp, event_id uuid, "
+            f"event_day date, instalment_no int, amount_cents bigint, method text, {key}"
+        )
+    params = [
+        (
+            e["loan_id"], e["event_time"], uuid.UUID(e["event_id"]), e["event_day"],
+            e["instalment_no"], e["amount_cents"], e["method"],
+        )
+        for e in events
+    ]  # fmt: skip
+    for name in DDL:
+        prepared = s.prepare(f"INSERT INTO {name} ({PAYMENT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        execute_concurrent_with_args(s, prepared, params, concurrency=64)
+    return len(params)
+
+
+def make_work_queue(s: Any) -> None:
+    """Step 4.5: a table used as a queue: 2,000 rows in one partition, 1,500 deleted."""
+    from cassandra.concurrent import execute_concurrent_with_args
+
+    s.execute(
+        "CREATE TABLE IF NOT EXISTS work_queue (queue text, item int, payload text, PRIMARY KEY ((queue), item))"
+    )
+    ins = s.prepare("INSERT INTO work_queue (queue, item, payload) VALUES ('documents', ?, 'pending')")
+    execute_concurrent_with_args(s, ins, [(i,) for i in range(2_000)], concurrency=64)
+    dele = s.prepare("DELETE FROM work_queue WHERE queue = 'documents' AND item = ?")
+    execute_concurrent_with_args(s, dele, [(i,) for i in range(1_500)], concurrency=64)
+
+
 def token_ranges(n: int) -> list[tuple[int, int]]:
     """Split the Murmur3 token ring into n contiguous (start, end] ranges."""
     width = (MAX_TOKEN - MIN_TOKEN) // n
@@ -42,7 +86,6 @@ def trace_lines(result: Any, needle: str) -> list[str]:
 
 def run() -> None:
     from cassandra import ConsistencyLevel
-    from cassandra.concurrent import execute_concurrent_with_args
     from cassandra.query import SimpleStatement
 
     heading("Chapter 4 lab: Apache Cassandra")
@@ -68,32 +111,11 @@ def run() -> None:
         f"CREATE KEYSPACE {KS} WITH replication = {{'class': 'SimpleStrategy', 'replication_factor': 1}}"
     )
     s.set_keyspace(KS)
-    ddl = {
-        "payments_by_loan": "PRIMARY KEY ((loan_id), event_time, event_id)) "
-        "WITH CLUSTERING ORDER BY (event_time DESC, event_id ASC)",
-        "payments_by_day": "PRIMARY KEY ((event_day), event_time, event_id))",
-        "payments_by_method": "PRIMARY KEY ((method), event_time, event_id))",
-    }
-    for name, key in ddl.items():
-        s.execute(
-            f"CREATE TABLE {name} (loan_id text, event_time timestamp, event_id uuid, "
-            f"event_day date, instalment_no int, amount_cents bigint, method text, {key}"
-        )
+    for name, key in DDL.items():
         say(f"CREATE TABLE {name} (... {key.split(' WITH')[0]}")
-    params = [
-        (
-            e["loan_id"], e["event_time"], uuid.UUID(e["event_id"]), e["event_day"],
-            e["instalment_no"], e["amount_cents"], e["method"],
-        )
-        for e in events
-    ]  # fmt: skip
     start = time.perf_counter()
-    for name in ddl:
-        prepared = s.prepare(f"INSERT INTO {name} ({PAYMENT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        execute_concurrent_with_args(s, prepared, params, concurrency=64)
-    say(
-        f"inserted {len(params)} payment events into each of the 3 tables in {time.perf_counter() - start:.1f}s"
-    )
+    inserted = create_and_load(s, events)
+    say(f"inserted {inserted} payment events into each of the 3 tables in {time.perf_counter() - start:.1f}s")
 
     # ------------------------------------------------------------------ 4.2
     step("4.2", "Partition key and clustering key")
@@ -178,13 +200,7 @@ def run() -> None:
 
     # ------------------------------------------------------------------ 4.5
     step("4.5", "Tombstones: deletes are writes, and reads pay for them")
-    s.execute(
-        "CREATE TABLE IF NOT EXISTS work_queue (queue text, item int, payload text, PRIMARY KEY ((queue), item))"
-    )
-    ins = s.prepare("INSERT INTO work_queue (queue, item, payload) VALUES ('documents', ?, 'pending')")
-    execute_concurrent_with_args(s, ins, [(i,) for i in range(2_000)], concurrency=64)
-    dele = s.prepare("DELETE FROM work_queue WHERE queue = 'documents' AND item = ?")
-    execute_concurrent_with_args(s, dele, [(i,) for i in range(1_500)], concurrency=64)
+    make_work_queue(s)
     say("inserted 2000 rows in one partition, then deleted 1500 of them one by one (a queue pattern)")
     res = s.execute(
         SimpleStatement("SELECT * FROM work_queue WHERE queue = 'documents'", fetch_size=5_000), trace=True

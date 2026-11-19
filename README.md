@@ -8,6 +8,8 @@ capture, schema drift, idempotency, reconciliation, and choosing the right store
 
 Every chapter has prose, a runnable lab against a real database in Docker, exercises,
 reference solutions, and a check command that tells you whether your answer is right.
+The lesson studio puts the same chapters in your browser, with consoles connected to the
+databases on your machine.
 
 ```text
 $ make capstone
@@ -29,6 +31,45 @@ Parquet lake, modelled in DuckDB, reconciled with counts and checksums.)
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/architecture-dark.svg">
   <img alt="The capstone pipeline: an ingest worker reads at-least-once payment deliveries from a Redis stream, skips duplicates with Redis dedup keys and writes them to Cassandra (payment events by day and per-day counters). MongoDB holds applications and syncs an identity graph to Neo4j. extract.py copies Cassandra by day partition with a lookback, MongoDB by updated_at watermark plus a key scan for deletes, and Neo4j as snapshots into a raw Parquet lake. model.py builds the DuckDB model and the fct_loan and mart_delinquency marts, and reconcile.py compares counts and checksums with each source." src="docs/img/architecture-light.svg">
+</picture>
+
+## Lesson studio
+
+The main way to work through the guide: a local web app with each chapter as a lesson, step
+by step, next to a console connected to the real database. Read a short step, open the
+guide section it comes from, press **Run this** on an example, then do the exercises in
+the console and press **Check my answer**: it runs your statement and the reference
+solution against the database and says PASS or FAIL, with what was expected and what you
+got.
+
+```bash
+make setup
+make up-capstone up-05   # every database; or only the chapter's, e.g. make up-02
+make studio              # prints http://127.0.0.1:8790/?token=... : open that address
+```
+
+- **Consoles in each database's own language:** mongosh for MongoDB (a subset, interpreted
+  in Python), redis-cli syntax for Redis, CQL for Cassandra with `TRACING ON` and
+  `CONSISTENCY`, PartiQL or a JSON API mode for DynamoDB Local (with ConsumedCapacity),
+  Cypher for Neo4j with `PROFILE` summarised, and SQL over the Parquet lake in DuckDB.
+  Line numbers, Ctrl/Cmd+Enter to run, history on Up and Down, results as a table or a
+  JSON tree, timings and readable errors.
+- **48 checked exercises:** 10 for MongoDB, 8 for Redis, 9 for Cassandra, 9 for
+  DynamoDB, 7 for Neo4j and 5 over the capstone's lake, plus the 6 and 7 quiz questions
+  of chapters 1 and 8. Each exercise has up to three hints, and its
+  solution opens after your first attempt.
+- **Prepare data** loads a chapter's data with the lab's own code and the seeded generator,
+  so the numbers match the guide. Chapter 7 runs the capstone from the browser and
+  streams each stage.
+- **Local only:** the server listens on 127.0.0.1, every API call needs the random token
+  from the printed address, and requests with a foreign Host or Origin are refused. There
+  is no shell: only the database consoles. Progress is saved in `.studio/progress.json`.
+
+How to use it with the chapters: [guide/00-setup.md](guide/00-setup.md#the-lesson-studio-the-chapters-in-a-browser-with-live-consoles).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/studio-dark.png">
+  <img alt="The lesson studio: chapter 2, exercise 2.3 on the left with a PASS verdict (IXSCAN on status_1_submitted_at_1: 117 keys, 117 documents, no in-memory sort) and the expected and actual explain numbers; on the right the MongoDB console with createIndex and find(...).explain('executionStats'), and the plan as a table: FETCH <- IXSCAN, nReturned 117. A status bar at the bottom shows every database up." src="docs/img/studio-light.png" width="800">
 </picture>
 
 ## Who it is for
@@ -57,6 +98,7 @@ make check-01       # the chapter 1 quiz; no database needed (fails until you an
 make up-02          # start MongoDB, wait until healthy
 make lab-02         # run the chapter 2 lab: every step prints its result
 make check-02       # check your chapter 2 exercises
+make studio         # or do it all in the browser: the lesson studio (see above)
 make down           # stop and delete the containers
 ```
 
@@ -127,10 +169,18 @@ src/nosqlde/           the shared package
   labs/                one lab per chapter (2 to 6)
   checks/              one check per chapter (1 to 8)
   capstone/            sources, extract, model, reconcile, pipeline
+  studio/              the lesson studio (make studio)
+    server.py          FastAPI app, fixed jobs (capstone, labs)
+    security.py        token, Host and Origin checks, security headers
+    runners/           one console per database
+    mongosh.py         the mongosh subset: parser and planner
+    lessons/           one lesson per chapter, and prepare.py
+    checking.py        PASS or FAIL against the reference solution
+    static/            the page: HTML, CSS and JavaScript, no build step
 exercises/             your work: starter files
 solutions/             reference answers
 tests/unit/            no database needed
-tests/integration/     every lab, check and the capstone, against the containers
+tests/integration/     every lab, check, the capstone and every studio exercise, against the containers
 docker-compose.yml     one profile per chapter, plus "capstone"
 Makefile               every command in this README
 ```
@@ -163,7 +213,10 @@ Python 3.12 and libraries, pinned in `pyproject.toml` and locked in `uv.lock`:
 | neo4j | 6.4.1 | Neo4j |
 | duckdb | 2.0.0 | the analytics side |
 | pyarrow | 26.0.1 | Parquet |
+| fastapi | 0.162.0 | the lesson studio's server |
+| uvicorn | 0.54.0 | the lesson studio's server |
 | pytest, ruff, mypy (dev) | 9.2.0, 0.17.5, 2.4.1 | tests and linting |
+| httpx (dev) | 0.28.1 | the studio's HTTP tests (Starlette's TestClient) |
 
 ## What was run, and the results
 
@@ -196,6 +249,26 @@ is now excluded from ruff and the whole path was run again):
 | unit tests | `make test` | 49 passed | 2.6 s |
 | lint | `make lint` | ruff: all checks passed; 57 files already formatted; mypy --strict: no issues in 33 source files | 4.5 s |
 | integration | `make up-capstone up-03 up-05`, then `make test-integration` | 11 passed (5 labs + checks against solutions, 5 starter-file checks, capstone + chapter 7 check) | 67.8 s + 40.9 s |
+
+The unit, lint and integration rows above are from the second full run; version 0.3.0's are below.
+
+### The lesson studio (0.3.0), 19 November 2026
+
+Same machine, Docker Desktop 29.6.2, containers started with `make up-capstone up-05`,
+the studio started with `make studio`. The browser was Google Chrome 157, headless,
+driven through the DevTools protocol: it pressed the buttons a learner presses and saved
+screenshots in light and dark at 1,440 pixels wide, and at 1,280, 1,024 and phone width.
+
+| Step | How | Result | Time |
+|---|---|---|---|
+| install | `uv sync --python 3.12` into a new environment | 47 packages installed (uv cache warm) | 0.1 s |
+| Prepare data | the button in chapters 2 to 6 | MongoDB 2,393 applications; Redis 8 keys and a 21-entry stream; Cassandra 11,465 payments per table; DynamoDB 18,814 items; Neo4j 7,179 edges exported | 0.72 / 0.02 / 4.03 / 4.64 / 0.92 s |
+| capstone | **Run the capstone** in chapter 7 | stages streamed; reconciliation 6/6 OK, re-run and backfill idempotent, PASS; same DPD table as chapter 7 | pipeline 5.5 s, job 6.3 s |
+| every solution | `POST /api/check` with each reference solution, and the quizzes' answers | 48 of 48 exercises PASS, 13 of 13 questions right | 1.8 s |
+| browser | the walk-through above | no errors or warnings in the browser console | |
+| unit tests | `make test` | 418 passed, 282 of them for the studio (mongosh parser 110, lesson integrity 102, consoles 35, security 23, comparison 12) | 2.7 s |
+| lint | `make lint` | ruff: all checks passed; 94 files already formatted; mypy --strict: no issues in 62 source files | |
+| integration | `make test-integration` | 60 passed: the 11 above plus, for every studio exercise, the solution passes and each listed wrong answer and a do-nothing statement fail; and one HTTP test with the token | 56.4 s |
 
 Every `make check-NN` on the untouched starter files exited non-zero with
 "not implemented yet" for each exercise, as intended. The capstone's numbers
@@ -263,6 +336,33 @@ project's Python 3.12, whatever your system Python is.
   shows output; anything else is marked in the chapter's own "What is not verified" list.
 - **Run-to-run variation:** Redis eviction counts, Neo4j db-hit counts, stream ids and
   timings differ slightly between runs; the guide says so where it quotes them.
+- **The lesson studio** ran in Google Chrome only (headless, on macOS); Firefox, Safari,
+  Windows and screen readers were not tried. Keyboard use (Ctrl/Cmd+Enter, history, Esc
+  to leave the editor, Tab order, arrow keys across the console tabs) was checked in
+  that headless Chrome. The new tests have not run in CI yet. Its known limits:
+  - The MongoDB console is a mongosh subset interpreted in Python: `db.<collection>`
+    methods (find, findOne, aggregate, countDocuments, distinct, insert, update, replace,
+    delete, index methods, drop), cursor `sort`, `limit`, `skip`, `project`, `explain`,
+    `show collections`, `db.getCollectionNames()` and `db.createCollection()`, with
+    JavaScript literals as arguments. No variables, functions, arithmetic, loops, `use`,
+    or `explain()` on an aggregation; anything else is refused with its line and column.
+  - DynamoDB Local 3.3.2 does not return ConsumedCapacity for PartiQL (`ExecuteStatement`);
+    the console says so, and its JSON mode reports capacity for every call. JSON mode
+    offers data-plane calls plus DescribeTable and TTL, not CreateTable or DeleteTable.
+  - The Redis console reads replies as RESP2, like redis-cli; redis-py does not say
+    whether a string reply was a status or a bulk string, so `OK`, `PONG`, `QUEUED` and
+    the replies of TYPE and BGSAVE print without quotes and every other string in quotes.
+    Commands that change database, block, affect the whole server or write files on it
+    are refused, and `CONFIG SET` is limited to the settings chapter 3 changes.
+  - The Cassandra console lets the server timestamp writes, so a plain write and an LWT
+    are ordered by one clock; with the driver's default client timestamps, the Docker
+    VM's clock and the laptop's disagreed and the LWT exercises' checks were flaky.
+  - The DuckDB console reads only files under `lake/` and refuses COPY, ATTACH, SET,
+    PRAGMA and extension installs.
+  - Results show the first 200 rows; checks read up to 20,000.
+  - One learner at a time: progress is one file, and running a lab or the capstone resets
+    data that a lesson may be using (chapter 3's eviction step evicts the studio's keys;
+    Neo4j has one database). Prepare data puts a chapter back.
 
 ## Licence
 

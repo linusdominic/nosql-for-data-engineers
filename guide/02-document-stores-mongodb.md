@@ -2,6 +2,8 @@
 
 Time: about 2 hours (45 minutes reading, 30 minutes lab, 45 minutes exercises).
 
+In the lesson studio (`make up-02`, then `make studio`): chapter 02, 10 exercises in a mongosh-style console, plus DuckDB over the flattened tables.
+
 ```bash
 make up-02      # MongoDB 8.0.38 as a single-node replica set, on localhost:27117
 make lab-02

@@ -2,6 +2,8 @@
 
 Time: about 2 hours (45 minutes reading, 20 minutes lab, 50 minutes exercises).
 
+In the lesson studio (`make up-05`, then `make studio`): chapter 05, 9 exercises in PartiQL or a JSON API mode that reports ConsumedCapacity.
+
 ```bash
 make up-05      # DynamoDB Local 3.3.2 on localhost:8100, in memory
 make lab-05

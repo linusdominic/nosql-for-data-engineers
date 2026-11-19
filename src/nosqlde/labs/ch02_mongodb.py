@@ -73,6 +73,83 @@ LOAN_SCHEMA = {
 }
 
 
+# Step 2.5's validator: the broker channel's string amounts do not pass it.
+VALIDATOR: dict[str, Any] = {
+    "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["application_id", "requested_amount", "status"],
+        "properties": {
+            "application_id": {"bsonType": "string"},
+            "requested_amount": {"bsonType": ["double", "int", "long", "decimal"]},
+            "status": {"enum": ["submitted", "approved", "declined", "withdrawn", "funded"]},
+        },
+    }
+}
+# Step 2.9's two extract times: the copy as of 30 April, then May's changes.
+T1 = datetime(2025, 4, 30, 23, 59, 59, tzinfo=UTC)
+T2 = datetime(2025, 5, 31, 23, 59, 59, tzinfo=UTC)
+
+
+def create_validated(db: Any, name: str = "applications_validated") -> None:
+    """The collection with step 2.5's $jsonSchema validator (rejects with code 121)."""
+    db.drop_collection(name)
+    db.create_collection(name, validator=VALIDATOR, validationLevel="strict", validationAction="error")
+
+
+def referenced(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Step 2.2: the applications with the borrower replaced by a reference."""
+    out = []
+    for d in docs:
+        r = {k: v for k, v in d.items() if k != "borrower"}
+        r["borrower_id"] = d["borrower"]["borrower_id"]
+        out.append(r)
+    return out
+
+
+def changes_between(world: datagen.World, t1: datetime, t2: datetime) -> list[ReplaceOne[dict[str, Any]]]:
+    """Step 2.9: upserts that move a copy of the source from t1 to t2."""
+    return [
+        ReplaceOne({"_id": d["_id"]}, d, upsert=True)
+        for d in datagen.applications_as_of(world, t2)
+        if (old := datagen.application_as_of(world.applications[int(d["_id"][1:]) - 1], t1)) is None
+        or old["updated_at"] != d["updated_at"]
+    ]
+
+
+def flattened_tables(docs: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Step 2.7: every application split into four tables (documents sorted by _id)."""
+    tables: dict[str, list[dict[str, Any]]] = {
+        "applications": [],
+        "application_documents": [],
+        "decline_reasons": [],
+        "loans": [],
+    }
+    for doc in sorted(docs, key=lambda d: d["_id"]):
+        for name, rows in flatten.flatten_application(doc).items():
+            tables[name].extend(rows)
+    return tables
+
+
+def write_lake(
+    tables: dict[str, list[dict[str, Any]]], out: Path
+) -> tuple[dict[str, int], drift.DriftReport]:
+    """Step 2.8: conform each table to its target schema and write it to Parquet."""
+    conformed, report = drift.conform(tables["applications"], APPLICATION_SCHEMA)
+    written = {
+        "applications": lake.write_parquet(
+            conformed, out / "applications.parquet", lake.arrow_schema(APPLICATION_SCHEMA, True)
+        )
+    }
+    for name, schema in (
+        ("application_documents", DOCUMENT_SCHEMA),
+        ("decline_reasons", REASON_SCHEMA),
+        ("loans", LOAN_SCHEMA),
+    ):
+        rows, _ = drift.conform(tables[name], schema, on_new="drop")
+        written[name] = lake.write_parquet(rows, out / f"{name}.parquet", lake.arrow_schema(schema))
+    return written, report
+
+
 def lab_dir() -> Path:
     return SETTINGS.lake_dir / "ch02"
 
@@ -125,12 +202,7 @@ def run() -> None:
     # ------------------------------------------------------------------ 2.2
     step("2.2", "Embed versus reference")
     load(db.borrowers, [{"_id": b["borrower_id"], **b} for b in world.borrowers])
-    referenced = []
-    for d in final_docs:
-        r = {k: v for k, v in d.items() if k != "borrower"}
-        r["borrower_id"] = d["borrower"]["borrower_id"]
-        referenced.append(r)
-    load(db.applications_ref, referenced)
+    load(db.applications_ref, referenced(final_docs))
     sizes = {}
     for name in ("applications", "applications_ref"):
         agg = list(db[name].aggregate([{"$group": {"_id": None, "avg": {"$avg": {"$bsonSize": "$$ROOT"}}}}]))
@@ -220,22 +292,7 @@ def run() -> None:
     # ------------------------------------------------------------------ 2.5
     step("2.5", "Schema validation with $jsonSchema")
     db.drop_collection("applications_validated")
-    db.create_collection(
-        "applications_validated",
-        validator={
-            "$jsonSchema": {
-                "bsonType": "object",
-                "required": ["application_id", "requested_amount", "status"],
-                "properties": {
-                    "application_id": {"bsonType": "string"},
-                    "requested_amount": {"bsonType": ["double", "int", "long", "decimal"]},
-                    "status": {"enum": ["submitted", "approved", "declined", "withdrawn", "funded"]},
-                },
-            }
-        },
-        validationLevel="strict",
-        validationAction="error",
-    )
+    create_validated(db)
     good = next(d for d in final_docs if isinstance(d["requested_amount"], float))
     bad = next(d for d in final_docs if isinstance(d["requested_amount"], str))
     db.applications_validated.insert_one(dict(good))
@@ -285,15 +342,7 @@ def run() -> None:
 
     # ------------------------------------------------------------------ 2.7
     step("2.7", "Flatten nested documents and arrays into tables")
-    tables: dict[str, list[dict[str, Any]]] = {
-        "applications": [],
-        "application_documents": [],
-        "decline_reasons": [],
-        "loans": [],
-    }
-    for doc in db.applications.find({}).sort("_id", ASCENDING):
-        for name, rows in flatten.flatten_application(doc).items():
-            tables[name].extend(rows)
+    tables = flattened_tables(list(db.applications.find({}).sort("_id", ASCENDING)))
     table([[n, len(r)] for n, r in tables.items()], ["table", "rows"])
     say("columns of the flattened applications table (first 8):")
     say("  " + ", ".join(list(tables["applications"][0])[:8]))
@@ -307,22 +356,10 @@ def run() -> None:
         say(f"  {col}: {types}")
     missing_cols = [c for c in APPLICATION_SCHEMA if c not in inferred]
     say(f"schema columns never seen: {missing_cols or 'none'}")
-    conformed, report = drift.conform(tables["applications"], APPLICATION_SCHEMA)
+    written, report = write_lake(tables, out)
     say("drift report for applications:")
     for line in report.lines():
         say(f"  {line}")
-    written = {
-        "applications": lake.write_parquet(
-            conformed, out / "applications.parquet", lake.arrow_schema(APPLICATION_SCHEMA, True)
-        )
-    }
-    for name, schema in (
-        ("application_documents", DOCUMENT_SCHEMA),
-        ("decline_reasons", REASON_SCHEMA),
-        ("loans", LOAN_SCHEMA),
-    ):
-        rows, _ = drift.conform(tables[name], schema, on_new="drop")
-        written[name] = lake.write_parquet(rows, out / f"{name}.parquet", lake.arrow_schema(schema))
     say(f"wrote Parquet to {out}/: {written}")
     con = duckdb.connect()
     loan_rows = con.execute(
@@ -350,21 +387,14 @@ def run() -> None:
 
     # ------------------------------------------------------------------ 2.9
     step("2.9", "Incremental extraction with an updated_at watermark")
-    t1 = datetime(2025, 4, 30, 23, 59, 59, tzinfo=UTC)
-    t2 = datetime(2025, 5, 31, 23, 59, 59, tzinfo=UTC)
+    t1, t2 = T1, T2
     inc = db.applications_inc
     load(inc, datagen.applications_as_of(world, t1))
     inc.create_index("updated_at")
     first = list(inc.find({}, {"_id": 1, "updated_at": 1}).sort("updated_at", ASCENDING))
     watermark = first[-1]["updated_at"]
     say(f"run 1 (full):        {len(first)} documents, watermark = {watermark.isoformat()}")
-    changes = [
-        ReplaceOne({"_id": d["_id"]}, d, upsert=True)
-        for d in datagen.applications_as_of(world, t2)
-        if (old := datagen.application_as_of(world.applications[int(d["_id"][1:]) - 1], t1)) is None
-        or old["updated_at"] != d["updated_at"]
-    ]
-    result = inc.bulk_write(changes)
+    result = inc.bulk_write(changes_between(world, t1, t2))
     say(f"source changes between runs: {result.upserted_count} inserted, {result.modified_count} updated")
     second = list(inc.find({"updated_at": {"$gt": watermark}}).sort("updated_at", ASCENDING))
     watermark2 = second[-1]["updated_at"]

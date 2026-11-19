@@ -2,6 +2,8 @@
 
 Time: about 45 minutes of reading, plus a 5-minute quiz (`make check-01`). No database needed.
 
+In the lesson studio (`make studio`): chapter 01, this chapter's quiz with the same explanations as `make check-01`.
+
 You know relational databases: tables with fixed columns, rows identified by a primary
 key, joins between tables, SQL to ask any question you like, and transactions that make a
 group of changes all-or-nothing. That model is so good that it is still the right default

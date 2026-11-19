@@ -2,6 +2,8 @@
 
 Time: about 1.5 hours (30 minutes reading, 15 minutes lab, 45 minutes exercises).
 
+In the lesson studio (`make up-06`, then `make studio`): chapter 06, 7 exercises in a Cypher console that summarises `PROFILE`.
+
 ```bash
 make up-06      # Neo4j 5.26.33 Community on localhost:7787 (Bolt) and :7574 (browser)
 make lab-06

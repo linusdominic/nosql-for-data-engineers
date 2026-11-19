@@ -29,7 +29,9 @@ make setup                     # uv sync --python 3.12
 make test                      # unit tests, no database needed
 make lint                      # ruff check, ruff format --check, mypy --strict
 make up-capstone up-03 up-05   # every database
-make test-integration          # every lab, every check against solutions/, the capstone
+make test-integration          # every lab, every check against solutions/, the capstone,
+                               # and every studio exercise (solution passes, wrong answers fail)
+make studio                    # the lesson studio on 127.0.0.1:8790
 make down
 ```
 
@@ -40,6 +42,12 @@ quotes from the affected labs.
 When you change an exercise, change the matching file in `solutions/` and the check in
 `src/nosqlde/checks/`, and confirm that `make check-NN` fails cleanly on the untouched
 starter file and passes with `SOLUTIONS=1`.
+
+When you add or change a studio exercise (`src/nosqlde/studio/lessons/chNN.py`), give it
+a reference solution, one to three hints and at least one plausible wrong answer;
+`make test-integration` then checks that the solution passes and that every wrong answer,
+and a statement that does nothing, fails. Studio data comes from the lab's own loading
+code in `prepare.py`, so the numbers stay those of the guide.
 
 ## Pull requests
 

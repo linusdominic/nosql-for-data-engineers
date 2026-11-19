@@ -18,6 +18,39 @@ from nosqlde.console import heading, say, step, table
 DB = 3
 
 
+STREAM, GROUP = "ch03:payments", "loader"
+
+
+def load_structures(r: Any, world: datagen.World) -> Any:
+    """Step 3.1's keys: a string, a counter, a hash, a list, two sets and a sorted set.
+    Returns what LPOP took from the queue."""
+    b = world.borrowers[0]
+    r.set("ch03:loan:L0000006:status", "funded")
+    r.incr("ch03:counter:applications_today")
+    r.incrby("ch03:counter:applications_today", 41)
+    r.hset(
+        f"ch03:borrower:{b['borrower_id']}",
+        mapping={"full_name": b["full_name"], "town": b["address"]["town"], "income": b["annual_income"]},
+    )
+    r.rpush("ch03:queue:documents_to_verify", "A0000001", "A0000002", "A0000003")
+    first_in_queue = r.lpop("ch03:queue:documents_to_verify")
+    r.sadd("ch03:phone:+999 7000:applications", "A0000030", "A0000302")
+    r.sadd("ch03:device:dev-1:applications", "A0000302", "A0000413")
+    for a in world.applications[:50]:
+        r.zadd("ch03:scores", {a["application_id"]: a["_decision"]["score"]})
+    return first_in_queue
+
+
+def fill_stream(r: Any, events: list[dict[str, Any]], stream: str = STREAM, group: str = GROUP) -> None:
+    """Step 3.8's stream: a consumer group, 20 payment entries and one poison entry."""
+    r.xgroup_create(stream, group, id="0", mkstream=True)
+    for e in events[:20]:
+        r.xadd(
+            stream, {"event_id": e["event_id"], "loan_id": e["loan_id"], "amount_cents": e["amount_cents"]}
+        )
+    r.xadd(stream, {"event_id": "poison", "loan_id": "L-BAD", "amount_cents": "not-a-number"})
+
+
 def _wait(r: Any, field: str) -> None:
     """Wait until an INFO persistence flag (e.g. rdb_bgsave_in_progress) is 0."""
     for _ in range(100):
@@ -37,20 +70,8 @@ def run() -> None:
     # ------------------------------------------------------------------ 3.1
     step("3.1", "Five data structures, five SQL analogies")
     b = world.borrowers[0]
-    r.set("ch03:loan:L0000006:status", "funded")
-    r.incr("ch03:counter:applications_today")
-    r.incrby("ch03:counter:applications_today", 41)
-    r.hset(
-        f"ch03:borrower:{b['borrower_id']}",
-        mapping={"full_name": b["full_name"], "town": b["address"]["town"], "income": b["annual_income"]},
-    )
-    r.rpush("ch03:queue:documents_to_verify", "A0000001", "A0000002", "A0000003")
-    first_in_queue = r.lpop("ch03:queue:documents_to_verify")
-    r.sadd("ch03:phone:+999 7000:applications", "A0000030", "A0000302")
-    r.sadd("ch03:device:dev-1:applications", "A0000302", "A0000413")
+    first_in_queue = load_structures(r, world)
     shared = r.sinter("ch03:phone:+999 7000:applications", "ch03:device:dev-1:applications")
-    for a in world.applications[:50]:
-        r.zadd("ch03:scores", {a["application_id"]: a["_decision"]["score"]})
     top3 = r.zrevrange("ch03:scores", 0, 2, withscores=True)
     in_band = r.zcount("ch03:scores", 600, 700)
     rows = [
@@ -209,13 +230,8 @@ def run() -> None:
 
     # ------------------------------------------------------------------ 3.8
     step("3.8", "Redis Streams with a consumer group: at-least-once delivery")
-    stream, group = "ch03:payments", "loader"
-    r.xgroup_create(stream, group, id="0", mkstream=True)
-    for e in events[:20]:
-        r.xadd(
-            stream, {"event_id": e["event_id"], "loan_id": e["loan_id"], "amount_cents": e["amount_cents"]}
-        )
-    r.xadd(stream, {"event_id": "poison", "loan_id": "L-BAD", "amount_cents": "not-a-number"})
+    stream, group = STREAM, GROUP
+    fill_stream(r, events, stream, group)
     say(f"XADD 21 entries to {stream}; XGROUP CREATE {group}")
     batch_a = r.xreadgroup(group, "worker-a", {stream: ">"}, count=5)
     ids_a = [entry_id for entry_id, _ in batch_a[0][1]]

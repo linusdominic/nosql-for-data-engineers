@@ -2,6 +2,8 @@
 
 Time: about 2.5 hours (5 minutes to run, the rest reading the code and doing the exercises).
 
+In the lesson studio (`make up-capstone`, then `make studio`): chapter 07 runs this capstone from the browser, stage by stage, then 5 exercises in DuckDB over the lake.
+
 ```bash
 make capstone   # starts MongoDB, Redis, Cassandra and Neo4j, then runs everything below
 make check-07   # after the exercises; 7.4 reads the capstone's output
