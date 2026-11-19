@@ -215,12 +215,13 @@ project's Python 3.12, whatever your system Python is.
 
 ## What is not verified
 
-- **One machine.** Everything above ran on macOS on Apple silicon. Linux and Windows
-  were not tried by the author.
-- **CI has not run.** `.github/workflows/ci.yml` runs lint, unit tests and the
-  integration tests (with the same compose file) on GitHub Actions; the action versions
-  were confirmed to exist with `git ls-remote --tags`, but the workflow itself has not
-  been executed on GitHub.
+- **One machine, plus CI.** Everything above ran on macOS on Apple silicon. The CI run
+  below repeats the labs, checks and capstone on Linux (GitHub's `ubuntu-24.04`, x86-64);
+  Windows was not tried.
+- **CI.** `.github/workflows/ci.yml` runs lint, unit tests and the integration tests
+  (every lab, check and the capstone, with the same compose file) on GitHub Actions. The
+  first run on GitHub passed on 19 November 2026: lint and unit tests in 19 s, the
+  integration job in 2 min 49 s including starting the containers.
 - **Single-node databases only.** Replication, failover, sharding, repair and
   multi-region behaviour are explained from the documentation, not demonstrated.
 - **No cloud services.** DynamoDB ran only as DynamoDB Local; managed services (Atlas,
