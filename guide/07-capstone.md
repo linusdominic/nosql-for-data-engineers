@@ -66,12 +66,12 @@ sources with the lake, and `pipeline.py` runs the story.
 6. **Model and reconcile.** DuckDB builds the curated tables and the marts; every source
    is reconciled against them.
 
-The whole run took 5.3 seconds on the author's laptop (with the containers already
-healthy) and ended with:
+The pipeline itself took 7.4 seconds on the author's laptop (71.9 s for `make capstone`
+including starting the containers; timings vary between runs) and ended with:
 
 ```text
 reconciliation: 6/6 OK; re-run and backfill idempotent: True
-capstone finished in 5.3s: PASS
+capstone finished in 7.4s: PASS
 ```
 
 ## Ingest: Redis stream to Cassandra, with idempotency

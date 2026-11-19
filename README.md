@@ -26,6 +26,11 @@ capstone finished in 7.4s: PASS
 (The capstone's last lines on the author's machine: four NoSQL sources copied into a
 Parquet lake, modelled in DuckDB, reconciled with counts and checksums.)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/architecture-dark.svg">
+  <img alt="The capstone pipeline: an ingest worker reads at-least-once payment deliveries from a Redis stream, skips duplicates with Redis dedup keys and writes them to Cassandra (payment events by day and per-day counters). MongoDB holds applications and syncs an identity graph to Neo4j. extract.py copies Cassandra by day partition with a lookback, MongoDB by updated_at watermark plus a key scan for deletes, and Neo4j as snapshots into a raw Parquet lake. model.py builds the DuckDB model and the fct_loan and mart_delinquency marts, and reconcile.py compares counts and checksums with each source." src="docs/img/architecture-light.svg">
+</picture>
+
 ## Who it is for
 
 - You write SQL every day and some Python.
@@ -56,6 +61,24 @@ make down           # stop and delete the containers
 ```
 
 Then open [guide/00-setup.md](guide/00-setup.md) and work through the chapters in order.
+
+## Interactive explorer
+
+A companion page for playing with the ideas before or alongside the chapters: the same
+loan as SQL tables, a MongoDB document, Redis keys, Cassandra tables, DynamoDB items and
+a Neo4j graph; a Redis Streams consumer group you can crash; a Cassandra consistency
+playground; a DynamoDB capacity calculator; the capstone pipeline with each run's counts;
+and a "which database?" walk through chapter 8. Measured numbers on it are real lab
+output, each tied to the line of the guide it comes from (a unit test keeps them in
+sync); the interactive parts are simulations and say so.
+
+Open [`docs/explorer/index.html`](docs/explorer/index.html) in a browser (no server or
+install needed), or run `make explorer` and open the address it prints.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/explorer-dark.png">
+  <img alt="The NoSQL explorer: a dark page titled NoSQL for data engineers, by playing with it, with links to the chapters for MongoDB, Redis, Cassandra, DynamoDB and Neo4j" src="docs/img/explorer-light.png" width="800">
+</picture>
 
 ## Learning path
 
@@ -151,6 +174,11 @@ Timings include `make` and `uv run` start-up.
 Second full run, 19 November 2026 (the first full run passed every step except
 `make lint`, because ruff 0.17 also formats Python code blocks inside Markdown; the guide
 is now excluded from ruff and the whole path was run again):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/capstone-results-dark.svg">
+  <img alt="What make capstone reported on 19 November 2026: 6 of 6 reconciliations OK, counts and checksums matching between MongoDB, Cassandra, Neo4j and Redis and the lake; 11,463 payment events in source and lake; raw lake unchanged after the re-run and the March backfill; pipeline run time 7.4 s, 71.9 s including starting the 4 containers." src="docs/img/capstone-results-light.svg">
+</picture>
 
 | Step | Command | Result | Time |
 |---|---|---|---|

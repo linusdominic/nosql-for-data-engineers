@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="253" viewBox="0 0 960 253" role="img" aria-label="What make capstone reported on 19 November 2026: 6 of 6 reconciliations OK, counts and checksums matching between MongoDB, Cassandra, Neo4j and Redis and the lake; 11,463 payment events in source and lake; raw lake unchanged after the re-run and the March backfill; pipeline run time 7.4 s, 71.9 s including starting the 4 containers.">
+  <title>What make capstone reported on 19 November 2026: 6 of 6 reconciliations OK, counts and checksums matching between MongoDB, Cassandra, Neo4j and Redis and the lake; 11,463 payment events in source and lake; raw lake unchanged after the re-run and the March backfill; pipeline run time 7.4 s, 71.9 s including starting the 4 containers.</title>
+  <rect x="0.5" y="0.5" width="959" height="252" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="28.0" y="40.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#1f2328" text-anchor="start">What make capstone reported</text>
+  <text x="28.0" y="60.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">Second full run from a clean state, 19 November 2026, on the author&#x27;s laptop. The data is seeded and invented.</text>
+  <rect x="28.0" y="82.0" width="22" height="4" rx="2" fill="#1baf7a"/>
+  <text x="28.0" y="120.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="32" font-weight="600" fill="#1f2328" text-anchor="start">6 / 6</text>
+  <text x="28.0" y="143.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">reconciliations OK: counts and</text>
+  <text x="28.0" y="162.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">checksums match</text>
+  <text x="28.0" y="183.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">MongoDB, Cassandra, Neo4j and</text>
+  <text x="28.0" y="200.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">Redis against the lake</text>
+  <line x1="254.0" y1="80.0" x2="254.0" y2="196.0" stroke="#d0d7de"/>
+  <rect x="274.0" y="82.0" width="22" height="4" rx="2" fill="#2a78d6"/>
+  <text x="274.0" y="120.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="32" font-weight="600" fill="#1f2328" text-anchor="start">11,463</text>
+  <text x="274.0" y="143.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">payment events in source and</text>
+  <text x="274.0" y="162.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">lake</text>
+  <text x="274.0" y="183.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">after at-least-once delivery and</text>
+  <text x="274.0" y="200.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">dedup keys</text>
+  <line x1="480.0" y1="80.0" x2="480.0" y2="196.0" stroke="#d0d7de"/>
+  <rect x="500.0" y="82.0" width="22" height="4" rx="2" fill="#1baf7a"/>
+  <text x="500.0" y="120.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="32" font-weight="600" fill="#1f2328" text-anchor="start">Unchanged</text>
+  <text x="500.0" y="143.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">raw lake after the re-run and</text>
+  <text x="500.0" y="162.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">the March backfill</text>
+  <text x="500.0" y="183.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">same row counts and checksums</text>
+  <line x1="706.0" y1="80.0" x2="706.0" y2="196.0" stroke="#d0d7de"/>
+  <rect x="726.0" y="82.0" width="22" height="4" rx="2" fill="#afb8c1"/>
+  <text x="726.0" y="120.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="32" font-weight="600" fill="#1f2328" text-anchor="start">7.4 s</text>
+  <text x="726.0" y="143.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#59636e" text-anchor="start">pipeline run time</text>
+  <text x="726.0" y="164.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">71.9 s with starting the 4</text>
+  <text x="726.0" y="181.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">containers; one laptop, not a</text>
+  <text x="726.0" y="198.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">benchmark</text>
+  <text x="28.0" y="231.0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#818b98" text-anchor="start">Source: README.md (What was run, and the results) and guide/07-capstone.md. Counts were identical in both full runs; timings differ.</text>
+</svg>

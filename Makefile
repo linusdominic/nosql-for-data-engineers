@@ -12,7 +12,7 @@ ALL_PROFILES := --profile ch02 --profile ch03 --profile ch04 --profile ch05 --pr
 
 .DEFAULT_GOAL := help
 .PHONY: help setup datagen ps logs down clean test test-unit test-integration lint format capstone \
-        up-02 up-03 up-04 up-05 up-06 up-capstone
+        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data
 # lab-% and check-% are pattern rules; make skips pattern rules for .PHONY targets,
 # so they are deliberately not listed above.
 
@@ -59,6 +59,17 @@ check-%: ## Check your exercise answers, e.g. make check-02
 
 capstone: up-capstone ## Run the end-to-end capstone pipeline (starts its containers)
 	$(RUN) nosqlde capstone
+
+# ---- explorer --------------------------------------------------------------------
+EXPLORER_PORT ?= 8099
+
+explorer: ## Serve the interactive explorer (docs/explorer) on localhost
+	@echo "NoSQL explorer: http://localhost:$(EXPLORER_PORT)/explorer/  (Ctrl+C to stop)"
+	@echo "No server needed either: open docs/explorer/index.html in a browser."
+	python3 -m http.server -d docs -b 127.0.0.1 $(EXPLORER_PORT)
+
+explorer-data: ## Rebuild docs/explorer/data.js from the generator and the recorded lab output
+	$(RUN) python tools/build_explorer_data.py
 
 # ---- quality ---------------------------------------------------------------------
 test: test-unit ## Unit tests (no database needed)

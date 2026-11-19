@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoSQL explorer</title>
+<meta name="description" content="An interactive companion to NoSQL for data engineers: one fictional lender's data in MongoDB, Redis, Cassandra, DynamoDB and Neo4j shapes, with the guide's real lab numbers.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='6' width='4' height='20' rx='2' fill='%231baf7a'/%3E%3Crect x='9' y='10' width='4' height='16' rx='2' fill='%23eb6834'/%3E%3Crect x='15' y='13' width='4' height='13' rx='2' fill='%232a78d6'/%3E%3Crect x='21' y='9' width='4' height='17' rx='2' fill='%23eda100'/%3E%3Crect x='27' y='16' width='2' height='10' rx='1' fill='%236250d6'/%3E%3C/svg%3E">
+<script>
+  // Pick the theme before first paint: ?theme=dark|light, then a saved choice, then the OS.
+  (function () {
+    var t = null;
+    try { t = new URLSearchParams(location.search).get("theme"); } catch (e) {}
+    if (!t && location.hash.indexOf("theme=") > -1) t = location.hash.split("theme=")[1].split("&")[0];
+    if (!t) { try { t = localStorage.getItem("nosql-explorer-theme"); } catch (e) {} }
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="NoSQL explorer, back to top">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="brand-text">NoSQL explorer</span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <ul>
+        <li><a href="#shapes">Five shapes</a></li>
+        <li><a href="#mongodb">MongoDB</a></li>
+        <li><a href="#redis">Redis</a></li>
+        <li><a href="#cassandra">Cassandra</a></li>
+        <li><a href="#dynamodb">DynamoDB</a></li>
+        <li><a href="#capstone">Capstone</a></li>
+        <li><a href="#choose">Which database?</a></li>
+      </ul>
+    </nav>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch to light theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ============================================================ hero -->
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="wrap">
+      <p class="kicker">Interactive companion to the guide</p>
+      <h1 id="hero-title">NoSQL for data engineers, by playing with it</h1>
+      <p class="lede">One fictional lender, Larkspur Lending, stored five ways. Turn the same loan into a document, keys,
+        partitions, items and a graph; break a consumer group; take a replica down; price a scan. Every measured
+        number on this page is real output from the guide's labs, and every simulation follows the rules the guide describes.</p>
+      <div class="cta">
+        <a class="btn primary" id="cta-start" href="#">Start with chapter 0</a>
+        <a class="btn" id="cta-repo" href="#">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+          The repository</a>
+        <a class="btn" href="#shapes">Explore the shapes</a>
+      </div>
+      <div class="db-row" id="db-row"></div>
+      <div class="stats" id="hero-stats"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ shapes -->
+  <section class="section" id="shapes" aria-labelledby="shapes-title">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapters 2 to 6</p>
+        <h2 id="shapes-title">One loan, five shapes</h2>
+        <p class="lede">Application <code>A0000006</code> and its loan <code>L0000006</code>, straight from the
+          seeded generator the labs use. The data does not change between tabs: only the shape does, and with it the
+          question each store answers cheaply.</p>
+        <a class="chapter-link" data-link="families" href="#">The families, chapter 1 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Storage shape" id="shape-tabs"></div>
+      <div id="shape-panel" role="tabpanel" tabindex="0"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ mongodb -->
+  <section class="section" id="mongodb" aria-labelledby="mongo-title" style="--accent: var(--mongo)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 2 · MongoDB</p>
+        <h2 id="mongo-title">Watermark or change stream?</h2>
+        <p class="lede">An <code>updated_at</code> watermark reads only what changed since the last run. It is
+          simple and fast, and it cannot see a document that is no longer there. Step through the lab's four runs
+          and compare what each method puts in the lake.</p>
+        <a class="chapter-link" data-link="watermark" href="#">Chapter 2, step 2.9 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="card" id="wm-card">
+        <ol class="steps" id="wm-steps" aria-label="Extraction runs"></ol>
+        <div id="wm-body"></div>
+        <div class="ctl" style="margin-top:16px">
+          <button class="btn small" type="button" id="wm-prev">Previous</button>
+          <button class="btn small primary" type="button" id="wm-next">Next step</button>
+          <span class="tag-rec">recorded: lab step 2.9</span>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card flat">
+          <div class="card-head"><h3>Resume token replay</h3><span class="tag-rec">recorded: lab step 2.10</span></div>
+          <p class="small muted">A change stream consumer saves its resume token, stops, and a second one resumes from it.
+            Nothing written in between is lost, and the delete arrives as an event.</p>
+          <ul class="events" id="cs-events" aria-live="polite"></ul>
+          <div class="ctl" style="margin-top:12px">
+            <button class="btn small primary" type="button" id="cs-step">Next event</button>
+            <button class="btn small" type="button" id="cs-reset">Start again</button>
+          </div>
+          <p class="small muted" id="cs-caption" style="margin-top:10px"></p>
+        </div>
+        <div class="card flat">
+          <div class="card-head"><h3>Collection scan or index</h3><span class="tag-rec">recorded: lab step 2.3</span></div>
+          <p class="small muted">June's declined applications, sorted by submission time, before and after
+            <code>create_index({status: 1, submitted_at: 1})</code>.</p>
+          <div id="explain-chart"></div>
+          <p class="note small" style="margin-top:12px">Read the plan bottom up: equality fields first, then the sort or
+            range field, exactly as in SQL. <a data-link="indexes" href="#">Indexes and explain()</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ redis -->
+  <section class="section" id="redis" aria-labelledby="redis-title" style="--accent: var(--redis)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 3 · Redis</p>
+        <h2 id="redis-title">A consumer group that survives a crash</h2>
+        <p class="lede">Each stream entry goes to one consumer of the group and stays in the pending entries list
+          (PEL) until it is acknowledged. Redis never redelivers by itself: somebody has to claim a dead worker's
+          entries. Play it, or replay the lab.</p>
+        <a class="chapter-link" data-link="streams" href="#">Chapter 3, step 3.8 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div class="card-head">
+            <h3>Stream <code>ch03:payments</code>, group <code>loader</code></h3>
+            <span class="tag-sim">simulation</span>
+          </div>
+          <div class="ctl" style="margin-bottom:10px">
+            <button class="btn small" type="button" id="st-add">XADD 5 entries</button>
+            <button class="btn small" type="button" id="st-poison">XADD a poison entry</button>
+            <button class="btn small" type="button" id="st-wait">Wait 1.1 s</button>
+            <button class="btn small" type="button" id="st-claim">XAUTOCLAIM to worker-b</button>
+            <span class="clock" id="st-clock"></span>
+          </div>
+          <div class="stream-lane" id="st-lane" aria-label="Stream entries"></div>
+          <ul class="legend" aria-label="Entry states">
+            <li><span class="sw" style="background:var(--blue)"></span>pending, worker-a</li>
+            <li><span class="sw" style="background:var(--aqua)"></span>pending, worker-b</li>
+            <li><span class="sw" style="background:var(--surface-3)"></span>acknowledged (struck through)</li>
+            <li><span class="sw" style="border:1px dashed var(--bad)"></span>moved to dead letter</li>
+            <li><b class="mono">!</b> poison: fails every time</li>
+          </ul>
+          <div class="consumers" id="st-consumers" style="margin-top:14px"></div>
+          <div class="ctl" style="margin-top:14px">
+            <button class="btn small primary" type="button" id="st-replay">Replay lab step 3.8</button>
+            <button class="btn small" type="button" id="st-reset">Reset</button>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card flat">
+            <h4>XPENDING</h4>
+            <div class="table-scroll"><table class="data" id="st-pel"></table></div>
+            <p class="small muted" id="st-info" style="margin:10px 0 0"></p>
+          </div>
+          <div class="card flat">
+            <h4>Commands</h4>
+            <ul class="log" id="st-log" aria-live="polite" aria-label="Command log"></ul>
+          </div>
+        </div>
+      </div>
+      <p class="note small" style="margin-top:16px">The rules here are Redis's: <code>XREADGROUP ... &gt;</code> hands out entries no
+        one in the group has received and records them as pending for that consumer; <code>XACK</code> removes them;
+        <code>XAUTOCLAIM</code> moves entries idle longer than its minimum (1000 ms here) to the caller and adds one to
+        their delivery count; a crashed consumer's entries just wait. The dead-letter rule (after 3 deliveries) is the
+        lab's own, not a Redis feature.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ cassandra -->
+  <section class="section" id="cassandra" aria-labelledby="cass-title" style="--accent: var(--cass)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 4 · Cassandra</p>
+        <h2 id="cass-title">Partitions and replicas</h2>
+        <p class="lede">The partition key decides which nodes store a row, and a partition is never split. Pick a
+          key for the 11,465 payment events and see how big the largest partition gets; then decide how many
+          replicas must answer.</p>
+        <a class="chapter-link" data-link="hot_partitions" href="#">Chapter 4, step 4.4 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div class="card-head"><h3>Choose a partition key</h3><span class="tag-rec">real partition sizes</span></div>
+          <div class="seg" role="radiogroup" aria-label="Partition key" id="pk-choice"></div>
+          <pre class="code wrap" id="pk-ddl" style="margin-top:14px"></pre>
+          <div class="vs" id="pk-stats" style="margin-top:14px;grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+          <div id="pk-chart" style="margin-top:18px"></div>
+        </div>
+        <div class="card flat">
+          <div class="card-head"><h3>Rows per node</h3><span class="tag-sim">simulation</span></div>
+          <p class="small muted">The same partitions placed on a cluster with replication factor 3. Each partition
+            lands on 3 nodes, whatever the cluster size.</p>
+          <div class="form-row">
+            <span class="lbl" id="nodes-lbl">Nodes in the cluster</span>
+            <span class="stepper-num" role="group" aria-labelledby="nodes-lbl">
+              <button type="button" id="nodes-minus" aria-label="Fewer nodes">−</button>
+              <output id="nodes-out" aria-live="polite">6</output>
+              <button type="button" id="nodes-plus" aria-label="More nodes">+</button>
+            </span>
+          </div>
+          <div id="node-chart"></div>
+          <p class="small muted" style="margin-top:10px">Placement uses a simplified hash ring (16 virtual nodes per node,
+            replicas on the next distinct nodes clockwise, like <code>SimpleStrategy</code>), not Murmur3, so exact
+            numbers differ from a real cluster. The shape of the imbalance does not.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-head"><h3>Consistency playground</h3><span class="tag-sim">simulation</span></div>
+        <div class="grid-2">
+          <div>
+            <div class="form-row">
+              <span class="lbl" id="cn-lbl">Nodes</span>
+              <span class="stepper-num" role="group" aria-labelledby="cn-lbl">
+                <button type="button" id="cn-minus" aria-label="Fewer nodes">−</button>
+                <output id="cn-out" aria-live="polite"></output>
+                <button type="button" id="cn-plus" aria-label="More nodes">+</button>
+              </span>
+            </div>
+            <div class="form-row">
+              <span class="lbl" id="rf-lbl">Replication factor</span>
+              <span class="stepper-num" role="group" aria-labelledby="rf-lbl">
+                <button type="button" id="rf-minus" aria-label="Lower replication factor">−</button>
+                <output id="rf-out" aria-live="polite"></output>
+                <button type="button" id="rf-plus" aria-label="Higher replication factor">+</button>
+              </span>
+            </div>
+            <div class="form-row"><span class="lbl" id="wcl-lbl">Write consistency</span><span class="seg" role="radiogroup" aria-labelledby="wcl-lbl" id="wcl"></span></div>
+            <div class="form-row"><span class="lbl" id="rcl-lbl">Read consistency</span><span class="seg" role="radiogroup" aria-labelledby="rcl-lbl" id="rcl"></span></div>
+            <div class="ctl" style="margin-bottom:14px">
+              <button class="btn small" type="button" id="cl-lab">Lab step 4.6: RF 3 on one node</button>
+              <button class="btn small" type="button" id="cl-healthy">Healthy cluster: 6 nodes, RF 3</button>
+            </div>
+            <div class="grid-2" style="gap:10px">
+              <div class="result-box" id="cl-write"></div>
+              <div class="result-box" id="cl-read"></div>
+            </div>
+            <p class="small" id="cl-overlap" style="margin-top:12px"></p>
+          </div>
+          <div>
+            <svg class="ring-svg" id="cl-ring" viewBox="0 0 320 320" role="group" aria-label="Cluster ring. Click a node to take it down or bring it back."></svg>
+            <ul class="legend" style="justify-content:center">
+              <li><span class="sw" style="background:var(--cass)"></span>replica of <code>L0000006</code>, up</li>
+              <li><span class="sw" style="background:var(--surface-3)"></span>other node, up</li>
+              <li><span class="sw" style="border:2px solid var(--bad)"></span>down</li>
+            </ul>
+            <p class="small muted" style="text-align:center;margin-top:8px">Click or press Enter on a node to take it down.</p>
+          </div>
+        </div>
+        <p class="note small" style="margin-top:12px">The coordinator needs ONE = 1, QUORUM = floor(RF / 2) + 1 and ALL = RF
+          replicas of the partition to answer, computed from the replication factor, not from how many nodes exist. With
+          fewer live replicas it refuses with <code>Unavailable</code> before touching data. When R + W &gt; RF every read
+          overlaps the latest write. <a data-link="consistency" href="#">Consistency levels</a></p>
+      </div>
+      <div class="card flat" style="margin-top:20px">
+        <div class="card-head"><h3>The same lesson, as a trace</h3><span class="tag-rec">recorded: lab step 4.3</span></div>
+        <div id="af-chart"></div>
+        <p class="small muted" style="margin-top:10px">To return 75 rows the filtered query read all 11,465. It passes in
+          development and times out in production. <a data-link="allow_filtering" href="#">Why ALLOW FILTERING is a trap</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ dynamodb -->
+  <section class="section" id="dynamodb" aria-labelledby="ddb-title" style="--accent: var(--dynamo)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 5 · DynamoDB</p>
+        <h2 id="ddb-title">What a scan really costs</h2>
+        <p class="lede">A <code>FilterExpression</code> is applied after items are read, and you pay for everything
+          read. Compare the access pattern "declined applications since June" as a scan and as a query on a global
+          secondary index, then grow the table.</p>
+        <a class="chapter-link" data-link="scan" href="#">Chapter 5, step 5.4 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div class="card-head"><h3>Capacity calculator</h3>
+            <div class="ctl"><button class="btn small" type="button" id="ddb-preset">Lab values</button><button class="btn small" type="button" id="ddb-x100">Table × 100</button></div>
+          </div>
+          <div class="calc-inputs">
+            <div class="field"><label for="ddb-items">Items in the table</label><input type="number" id="ddb-items" min="1" step="1"><span class="hint">What the scan reads</span></div>
+            <div class="field"><label for="ddb-size">Average item size (bytes)</label><input type="number" id="ddb-size" min="1" step="1"><span class="hint" id="ddb-size-hint"></span></div>
+            <div class="field"><label for="ddb-match">Items that match</label><input type="number" id="ddb-match" min="0" step="1"><span class="hint">What the GSI query reads</span></div>
+            <div class="field"><label for="ddb-msize">Average matching item size (bytes)</label><input type="number" id="ddb-msize" min="1" step="1"><span class="hint" id="ddb-msize-hint"></span></div>
+            <div class="field"><label for="ddb-cons">Read consistency</label>
+              <select id="ddb-cons"><option value="eventual">Eventually consistent (default)</option><option value="strong">Strongly consistent (ConsistentRead)</option></select>
+              <span class="hint">GSI reads are always eventually consistent</span></div>
+            <div class="field"><label for="ddb-runs">Runs per day</label><input type="number" id="ddb-runs" min="1" step="1" value="24"><span class="hint">An hourly job, for example</span></div>
+          </div>
+          <div id="ddb-chart" style="margin-top:18px"></div>
+          <div class="formula" id="ddb-formula" style="margin-top:14px"></div>
+        </div>
+        <div class="stack">
+          <div class="card flat">
+            <div class="card-head"><h3>Measured in the lab</h3><span class="tag-rec">recorded: steps 5.3, 5.4</span></div>
+            <div class="vs" id="ddb-lab"></div>
+            <p class="small muted" id="ddb-compare" style="margin:12px 0 0"></p>
+          </div>
+          <div class="card flat">
+            <h4>The rules the calculator uses</h4>
+            <ul class="checklist">
+              <li>One read capacity unit (RCU) is one strongly consistent read of up to 4 KB, or two eventually consistent ones.</li>
+              <li>A query or scan adds up the size of every item it reads, then rounds up to the next 4 KB, per page.</li>
+              <li>A page holds at most 1 MB, then <code>LastEvaluatedKey</code> asks for the next one.</li>
+              <li>The filter runs after the read: <code>ScannedCount</code> is what you pay for, <code>Count</code> is what you get.</li>
+            </ul>
+            <p class="small muted">DynamoDB Local reports capacity but never throttles, and its numbers were not compared with
+              the service. <a data-link="gsi" href="#">Global secondary indexes</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ capstone -->
+  <section class="section" id="capstone" aria-labelledby="cap-title" style="--accent: var(--grey)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 7 · Capstone</p>
+        <h2 id="cap-title">Four sources, one lake, six reconciliations</h2>
+        <p class="lede">The capstone copies MongoDB, Cassandra, Neo4j and Redis into a Parquet lake, models it in
+          DuckDB and proves the copy is complete. Pick a run, then click any box for what it holds and how it was
+          extracted.</p>
+        <a class="chapter-link" data-link="capstone" href="#">Chapter 7 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="seg" role="radiogroup" aria-label="Pipeline run" id="cap-runs"></div>
+          <span class="tag-rec">recorded: make capstone</span>
+        </div>
+        <div class="pipe" id="cap-pipe"></div>
+        <div class="result-box" id="cap-detail" style="margin-top:20px" aria-live="polite"></div>
+      </div>
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card flat">
+          <div class="card-head"><h3>Reconciliation</h3><span class="verdict ok" id="recon-verdict"></span></div>
+          <ul class="recon" id="recon-list"></ul>
+          <p class="small muted" style="margin-top:12px">Each check fingerprints the same columns on both sides: a row
+            count plus an order-independent checksum. <a data-link="reconciliation" href="#">Reconciliation</a></p>
+        </div>
+        <div class="card flat">
+          <div class="card-head"><h3>Delinquency on 31 December 2025</h3></div>
+          <div id="dpd-chart"></div>
+          <div id="ring-chart" style="margin-top:22px"></div>
+          <p class="small muted" style="margin-top:10px">On real data a gap like this starts an investigation; here it is how
+            the data was generated. <a data-link="model" href="#">The model</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ choose -->
+  <section class="section" id="choose" aria-labelledby="choose-title" style="--accent: var(--violet)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Chapter 8</p>
+        <h2 id="choose-title">Which database?</h2>
+        <p class="lede">Start from the access patterns, not from the product. This follows chapter 8's decision
+          guide one question at a time.</p>
+        <a class="chapter-link" data-link="decision" href="#">A decision guide <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="wizard">
+        <div class="card" id="wiz-q" aria-live="polite"></div>
+        <div class="card flat" id="wiz-a" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h3>Where the numbers come from</h3>
+        <p><span class="tag-rec">recorded</span> numbers are lab and capstone output quoted in the guide, from a clean run on
+          19 November 2026. Each one below names its chapter and the exact line it comes from, and a unit test checks that
+          the line is still in the guide.</p>
+        <p>Sample records (the loan, its payments, the graph, partition sizes, item sizes) are computed from
+          <code>datagen.generate(seed=42)</code> by <code>tools/build_explorer_data.py</code>, the generator every lab uses.</p>
+        <p><span class="tag-sim">simulation</span> panels run in your browser and follow the semantics the guide describes;
+          they are teaching models, not the databases.</p>
+      </div>
+      <div>
+        <h3>About</h3>
+        <p>All data is invented: Larkspur Lending, its borrowers, employers, streets and towns do not exist. Phone numbers
+          use the unassigned <code>+999</code> prefix and emails use <code>example.com</code>.</p>
+        <p>This page has no build step and makes no network requests. <a id="foot-repo" href="#">Source on GitHub</a>.</p>
+      </div>
+    </div>
+    <div class="prov" style="margin-top:24px">
+      <details id="prov">
+        <summary id="prov-summary">Every recorded result</summary>
+        <div class="table-scroll" style="margin-top:12px"><table class="data" id="prov-table"></table></div>
+      </details>
+    </div>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
+<noscript><p>The explorer needs JavaScript for its interactive parts. The guide itself is plain Markdown in the repository.</p></noscript>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
