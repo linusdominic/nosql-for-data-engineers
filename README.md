@@ -36,11 +36,11 @@ Parquet lake, modelled in DuckDB, reconciled with counts and checksums.)
 ## Lesson studio
 
 The main way to work through the guide: a local web app with each chapter as a lesson, step
-by step, next to a console connected to the real database. Read a short step, open the
-guide section it comes from, press **Run this** on an example, then do the exercises in
-the console and press **Check my answer**: it runs your statement and the reference
-solution against the database and says PASS or FAIL, with what was expected and what you
-got.
+by step, next to a console connected to the real database. Read a short step (or the
+guide section it comes from, in the studio's own reader), press **Run this** on an
+example, then do the exercises in the console and press **Check my answer**: it runs your
+statement and the reference solution against the database and says PASS or FAIL, with
+what was expected and what you got.
 
 ```bash
 make setup
@@ -58,18 +58,38 @@ make studio              # prints http://127.0.0.1:8790/?token=... : open that a
   DynamoDB, 7 for Neo4j and 5 over the capstone's lake, plus the 6 and 7 quiz questions
   of chapters 1 and 8. Each exercise has up to three hints, and its
   solution opens after your first attempt.
+- **The guide, inside the studio:** **Read** at the top shows every chapter, 0 to 8,
+  rendered from `guide/*.md` on each request: a table of contents that follows your
+  place, a link to copy on every heading, reading progress, previous and next chapter,
+  the three diagrams in light and dark, scrollable tables, and lab output styled as
+  output. Every database statement in the guide has **Open in console**, which loads it
+  into the right console (Cypher into Neo4j, CQL into Cassandra, SQL into DuckDB);
+  shell and Python blocks only have **Copy**. **Read this section** on a lesson step
+  opens the reader at that heading next to the console, and **Back to step** returns.
+  `/` searches every chapter, and a repository file named in the text opens in a
+  read-only viewer. Nothing sends you to GitHub; outside links open in a new tab with no
+  referrer.
 - **Prepare data** loads a chapter's data with the lab's own code and the seeded generator,
   so the numbers match the guide. Chapter 7 runs the capstone from the browser and
   streams each stage.
 - **Local only:** the server listens on 127.0.0.1, every API call needs the random token
   from the printed address, and requests with a foreign Host or Origin are refused. There
   is no shell: only the database consoles. Progress is saved in `.studio/progress.json`.
+  Raw HTML in the guide is shown as text, never run; the file viewer shows `guide/`,
+  `src/`, `exercises/`, `solutions/`, `tests/`, `tools/` and `docs/` only (not the
+  studio's lesson files, which hold the solutions), and refuses `..`, absolute paths,
+  hidden files and symlinks that lead out.
 
 How to use it with the chapters: [guide/00-setup.md](guide/00-setup.md#the-lesson-studio-the-chapters-in-a-browser-with-live-consoles).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/studio-dark.png">
-  <img alt="The lesson studio: chapter 2, exercise 2.3 on the left with a PASS verdict (IXSCAN on status_1_submitted_at_1: 117 keys, 117 documents, no in-memory sort) and the expected and actual explain numbers; on the right the MongoDB console with createIndex and find(...).explain('executionStats'), and the plan as a table: FETCH <- IXSCAN, nReturned 117. A status bar at the bottom shows every database up." src="docs/img/studio-light.png" width="800">
+  <img alt="The lesson studio: chapter 2, exercise 2.5 (approval rate by product) on the left with a PASS verdict, 3 rows match in the right order, and the expected and actual rows side by side; on the right the MongoDB console with the aggregation pipeline and its result as a table: auto 766 applications, 525 approved, 0.6854; home_improvement 826, 536, 0.6489; personal 801, 545, 0.6804. Lesson and Read switch at the top left, every database up in the status bar." src="docs/img/studio-light.png" width="800">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/studio-reader-dark.png">
+  <img alt="The guide reader next to the console: chapter 6, Cypher patterns versus SQL joins, with a Cypher block and an SQL block, each with Copy and Open in Neo4j or Open in DuckDB, and the lab's output below them; on the right the Neo4j console with the Cypher query loaded, ready to run." src="docs/img/studio-reader-light.png" width="800">
 </picture>
 
 ## Who it is for
@@ -172,11 +192,14 @@ src/nosqlde/           the shared package
   studio/              the lesson studio (make studio)
     server.py          FastAPI app, fixed jobs (capstone, labs)
     security.py        token, Host and Origin checks, security headers
+    reader.py          the guide reader: Markdown to HTML, links, console detection, search
+    repofiles.py       the read-only file viewer's path rules
     runners/           one console per database
     mongosh.py         the mongosh subset: parser and planner
     lessons/           one lesson per chapter, and prepare.py
     checking.py        PASS or FAIL against the reference solution
-    static/            the page: HTML, CSS and JavaScript, no build step
+    static/            the page: HTML, CSS and JavaScript, no build step; diagrams/ as SVG
+tools/                 build_explorer_data.py; render_diagrams.py (make diagrams) with mermaid in vendor/
 exercises/             your work: starter files
 solutions/             reference answers
 tests/unit/            no database needed
@@ -215,8 +238,14 @@ Python 3.12 and libraries, pinned in `pyproject.toml` and locked in `uv.lock`:
 | pyarrow | 26.0.1 | Parquet |
 | fastapi | 0.162.0 | the lesson studio's server |
 | uvicorn | 0.54.0 | the lesson studio's server |
+| markdown-it-py | 4.2.0 | the studio's guide reader (CommonMark plus tables, raw HTML off); brings mdurl 0.1.2 |
 | pytest, ruff, mypy (dev) | 9.2.0, 0.17.5, 2.4.1 | tests and linting |
 | httpx (dev) | 0.28.1 | the studio's HTTP tests (Starlette's TestClient) |
+
+The guide's three diagrams are pre-rendered to SVG with mermaid 12.3.0 (MIT; downloaded from
+npm on first use, checked against a pinned sha256 and cached in `tools/.cache/`) by
+`make diagrams`, which runs it in headless Chrome. Mermaid is not shipped to the browser
+and is not needed at runtime.
 
 ## What was run, and the results
 
@@ -250,7 +279,8 @@ is now excluded from ruff and the whole path was run again):
 | lint | `make lint` | ruff: all checks passed; 57 files already formatted; mypy --strict: no issues in 33 source files | 4.5 s |
 | integration | `make up-capstone up-03 up-05`, then `make test-integration` | 11 passed (5 labs + checks against solutions, 5 starter-file checks, capstone + chapter 7 check) | 67.8 s + 40.9 s |
 
-The unit, lint and integration rows above are from the second full run; version 0.3.0's are below.
+The unit, lint and integration rows above are from the second full run; versions 0.3.0's
+and 0.4.0's are below.
 
 ### The lesson studio (0.3.0), 19 November 2026
 
@@ -276,6 +306,24 @@ Every `make check-NN` on the untouched starter files exited non-zero with
 reconciliations) and every lab's counts were identical in both full runs; only timings,
 Redis eviction counts, stream ids, DynamoDB sequence numbers and one Neo4j db-hit count
 differed.
+
+### The guide reader (0.4.0), 19 November 2026
+
+Same machine, uv 0.13.6, Google Chrome 157 (headless, driven through the DevTools
+protocol), the studio started on a second port next to a running one.
+
+| Step | How | Result | Time |
+|---|---|---|---|
+| install | `uv sync --python 3.12 --locked` into a new environment | 49 packages installed (uv cache warm) | 87 ms |
+| diagrams | `make diagrams` | 3 diagrams, light and dark; a second run wrote byte-identical files | 1.4 s |
+| render | each chapter, first render | chapters 0 to 8 rendered; about 2 to 4 ms each | |
+| browser | all 9 chapters in light and dark at 1,440 and 1,024 pixels (36 loads), phone width; Open in console, Read this section and back, search, the file viewer, a refused path | every chapter and diagram loaded, no sideways page scroll; no errors or warnings in the browser console, except the server's 400 or 403 for a refused path | |
+| unit tests | `make test` | 503 passed, 85 of them for the reader and the file viewer | 3.1 s |
+| lint | `make lint` | ruff: all checks passed; 98 files already formatted; mypy --strict: no issues in 64 source files | |
+
+`make test-integration` was not run for this version: it prepares and resets the
+studio's databases, which were in use at the time, and the reader changes none of the
+code it covers.
 
 ## Troubleshooting
 
@@ -339,7 +387,8 @@ project's Python 3.12, whatever your system Python is.
 - **The lesson studio** ran in Google Chrome only (headless, on macOS); Firefox, Safari,
   Windows and screen readers were not tried. Keyboard use (Ctrl/Cmd+Enter, history, Esc
   to leave the editor, Tab order, arrow keys across the console tabs) was checked in
-  that headless Chrome. The new tests have not run in CI yet. Its known limits:
+  that headless Chrome. Its integration tests (every exercise against the real
+  databases) passed on GitHub Actions on 19 November 2026 (Linux). Its known limits:
   - The MongoDB console is a mongosh subset interpreted in Python: `db.<collection>`
     methods (find, findOne, aggregate, countDocuments, distinct, insert, update, replace,
     delete, index methods, drop), cursor `sort`, `limit`, `skip`, `project`, `explain`,
@@ -363,6 +412,12 @@ project's Python 3.12, whatever your system Python is.
   - One learner at a time: progress is one file, and running a lab or the capstone resets
     data that a lesson may be using (chapter 3's eviction step evicts the studio's keys;
     Neo4j has one database). Prepare data puts a chapter back.
+  - The reader's diagrams are SVGs measured with the system font on macOS; on another
+    system the text in a box may sit slightly differently. An edited diagram shows its
+    source until `make diagrams` runs again (a unit test fails until then).
+  - Open in console is offered only where the block's language is clear: tagged Cypher,
+    CQL, SQL and mongosh, and untagged statements that can only belong to one console.
+    Lab output is never offered, even when it quotes a statement.
 
 ## Licence
 

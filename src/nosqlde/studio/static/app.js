@@ -1,4 +1,5 @@
-/* NoSQL lesson studio: lessons on the left, live consoles on the right. Vanilla JS. */
+/* NoSQL lesson studio: lessons (or the guide reader, reader.js) on the left, live consoles
+   on the right. Vanilla JS. */
 (function () {
   "use strict";
 
@@ -18,6 +19,10 @@
     views: {}, // block view choice (table/json) by console
     status: [],
     jobRunning: false,
+    view: "lesson", // "lesson" or "reader"
+    readerLayout: "wide", // "wide" (console hidden) or "split" (reader next to the console)
+    readerFrom: null, // {hash, label}: the lesson step the reader was opened from
+    lessonHash: null, // the lesson route currently rendered in the lesson pane
   };
 
   // ------------------------------------------------------------ helpers
@@ -78,6 +83,14 @@
       db: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
       check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
       edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
+      book: '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11a1 1 0 0 1 1 1v16a1 1 0 0 0-1-1H5.5A1.5 1.5 0 0 1 4 17.5zM20 4.5A1.5 1.5 0 0 0 18.5 3H13a1 1 0 0 0-1 1v16a1 1 0 0 1 1-1h5.5a1.5 1.5 0 0 0 1.5-1.5z"/>',
+      back: '<path d="M15 5l-7 7 7 7"/>',
+      copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+      file: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
+      folder: '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/>',
+      console: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12.5 15H17"/>',
+      split: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>',
+      wide: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
     };
     var svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || "") + "</svg>";
     var span = document.createElement("span");
@@ -574,6 +587,23 @@
 
   function renderNav() {
     var ol = clear($("chapter-nav"));
+    updateModeSwitch();
+    requestAnimationFrame(function () {
+      var on = ol.querySelector('[aria-current="page"]');
+      var nav = ol.parentNode;
+      if (!on) return;
+      var r = on.getBoundingClientRect(), nr = nav.getBoundingClientRect();
+      if (r.left < nr.left || r.right > nr.right) nav.scrollLeft += r.left - nr.left - (nr.width - r.width) / 2;
+    });
+    if (state.view === "reader") {
+      var reading = state.reading || {};
+      (state.meta.guide || []).forEach(function (c) {
+        ol.appendChild(h("li", null, h("a", { href: "#/read/" + c.id, "aria-current": reading.chapter === c.id ? "page" : null, title: "Chapter " + c.id + ": " + c.title },
+          h("span", { class: "num", text: c.id }),
+          h("span", { text: guideShort(c) }))));
+      });
+      return;
+    }
     state.meta.lessons.forEach(function (l) {
       var p = pct(l.progress);
       var current = state.lesson && state.lesson.id === l.id;
@@ -583,6 +613,91 @@
         h("span", { text: shortTitle(l) }))));
     });
   }
+  function guideShort(c) {
+    if (c.number === 0) return "Setup";
+    var l = lessonMeta("ch" + c.id);
+    return l ? shortTitle(l) : c.title;
+  }
+  function stepAnchor() {
+    if (!state.lesson) return "";
+    var s = steps()[state.stepIndex];
+    return s && s.guide ? s.guide.anchor : "";
+  }
+  function updateModeSwitch() {
+    var lessonA = $("mode-lesson"), readA = $("mode-read");
+    var reading = state.view === "reader";
+    lessonA.setAttribute("aria-current", reading ? "false" : "page");
+    readA.setAttribute("aria-current", reading ? "page" : "false");
+    var ch = reading && state.reading ? state.reading.chapter : null;
+    if (reading) {
+      if (state.readerFrom && ch && state.readerFrom.lesson === "ch" + ch) lessonA.href = state.readerFrom.hash;
+      else if (ch && lessonMeta("ch" + ch)) lessonA.href = "#/ch" + ch;
+      else lessonA.href = state.lessonHash || "#/";
+      readA.href = location.hash || "#/read/00";
+    } else {
+      lessonA.href = location.hash || "#/";
+      if (state.lesson) readA.href = "#/read/" + pad2(state.lesson.number) + (stepAnchor() ? "/" + stepAnchor() : "");
+      else readA.href = "#/read/" + store.get("last-read", "00");
+    }
+  }
+  $("mode-read").addEventListener("click", function () {
+    if (state.view === "lesson" && state.lesson) rememberLesson(state.lesson.quiz.length ? "Back to the quiz" : "Back to step " + (state.stepIndex + 1) + ": " + steps()[state.stepIndex].title);
+  });
+
+  // ------------------------------------------------------------ views: lesson or reader
+  function setView(view) {
+    var studio = $("studio");
+    if (view !== state.view) {
+      if (view === "reader") state.lessonScroll = $("lesson").scrollTop;
+      state.view = view;
+      $("lesson").hidden = view !== "lesson";
+      $("reader").hidden = view !== "reader";
+      if (view === "lesson") $("lesson").scrollTop = state.lessonScroll || 0;
+      var skip = $("skip-main");
+      skip.textContent = view === "reader" ? "Skip to the guide" : "Skip to the lesson";
+      skip.setAttribute("href", view === "reader" ? "#reader" : "#lesson");
+    }
+    studio.classList.toggle("reading", view === "reader");
+    applyReaderLayout();
+  }
+  function applyReaderLayout() {
+    var studio = $("studio");
+    var reading = state.view === "reader";
+    var wide = reading && state.readerLayout === "wide";
+    studio.classList.toggle("read-wide", wide);
+    studio.classList.toggle("read-split", reading && !wide);
+    if (Studio.reader) Studio.reader.layoutChanged();
+  }
+  // `remember`: the learner chose it (the layout button); a split forced by Open in console
+  // or by a lesson's Read this section lasts until they leave the reader.
+  function setReaderLayout(layout, remember) {
+    state.readerLayout = layout === "split" ? "split" : "wide";
+    if (remember) store.set("reader-layout", state.readerLayout);
+    applyReaderLayout();
+  }
+
+  // Load a code block from the guide into a console (never run it: the learner presses Run).
+  function openInConsole(consoleId, code) {
+    if (!(state.meta.consoles || []).some(function (c) { return c.id === consoleId; })) return;
+    if (state.view === "reader" && state.readerLayout === "wide") setReaderLayout("split");
+    if (state.active) setActive(null);
+    switchConsole(consoleId, true);
+    setEditor(code.replace(/\s+$/, ""));
+    saveDraft();
+    if (window.matchMedia("(max-width: 980px)").matches) $("console-pane").scrollIntoView({ block: "start" });
+    editor.focus({ preventScroll: true });
+    toast("Loaded into the " + consoleInfo(consoleId).label + " console. Press " + runKeys() + " to run it.");
+  }
+
+  var toastTimer = null;
+  function toast(text) {
+    var t = $("toast");
+    t.textContent = text;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+
   function shortTitle(l) {
     return { ch01: "Why NoSQL", ch02: "MongoDB", ch03: "Redis", ch04: "Cassandra", ch05: "DynamoDB", ch06: "Neo4j", ch07: "Capstone", ch08: "Choosing" }[l.id] || l.title;
   }
@@ -614,8 +729,15 @@
         h("span", { class: "prog" }, h("span", { class: "ring" + (pct(l.progress) === 100 ? " full" : ""), style: "--p:" + pct(l.progress), "aria-hidden": "true" }), l.progress.done + " of " + l.progress.total + " done")));
     });
     inner.appendChild(cards);
-    inner.appendChild(h("p", { class: "small muted" }, "Prefer to read first? The ", h("a", { href: state.meta.repo + "/blob/main/guide/00-setup.md", target: "_blank", rel: "noreferrer noopener", text: "guide" }),
-      " has every chapter, and the ", h("a", { href: state.meta.explorer, target: "_blank", rel: "noreferrer noopener", text: "explorer" }), " is an offline companion with simulations."));
+    var guideList = h("ol", { class: "guide-list" });
+    (state.meta.guide || []).forEach(function (c) {
+      guideList.appendChild(h("li", null, h("a", { href: "#/read/" + c.id }, h("span", { class: "num", text: c.id }), h("span", { text: c.title }))));
+    });
+    inner.appendChild(h("div", { class: "panel" },
+      h("h3", null, icon("book"), " Prefer to read first?"),
+      h("p", { class: "small muted", text: "Every chapter of the guide, rendered here with diagrams, tables and an Open in console button on each database statement. Read is also at the top of the page." }),
+      guideList));
+    inner.appendChild(h("p", { class: "small muted" }, "The ", h("a", { class: "ext", href: state.meta.explorer, target: "_blank", rel: "noopener noreferrer", text: "explorer" }), " is a companion with simulations of each database (it opens in a new tab)."));
     switchConsole(state.console);
   }
 
@@ -655,7 +777,9 @@
     if (LAB_LESSONS[l.id]) {
       actions.appendChild(h("button", { type: "button", class: "btn", onclick: function () { showJobPanel("lab-" + l.id.slice(2), "Run the whole lab (make lab-" + l.id.slice(2) + ")", []); } }, icon("play"), "Run the whole lab"));
     }
-    actions.appendChild(h("a", { class: "btn ghost", href: l.guide.url.split("#")[0], target: "_blank", rel: "noreferrer noopener" }, "Read the chapter", icon("ext")));
+    actions.appendChild(l.guide.chapter === undefined
+      ? h("a", { class: "btn ghost", href: String(l.guide.url).split("#")[0], target: "_blank", rel: "noopener noreferrer" }, "Read the chapter", icon("ext"))
+      : h("a", { class: "btn ghost", href: "#/read/" + pad2(l.guide.chapter), onclick: function () { rememberLesson("Back to the lesson"); } }, icon("book"), "Read the chapter"));
     var prog = l.progress;
     var head = h("div", { class: "lesson-head" },
       h("p", { class: "kicker" }, h("span", { class: "dot" }), "Chapter " + String(l.number).padStart(2, "0") + " · " + l.database),
@@ -747,7 +871,7 @@
     var s = list[idx];
     var body = h("div", { class: "step-body" });
     body.appendChild(h("h2", { text: (idx + 1) + ". " + s.title }));
-    body.appendChild(h("a", { class: "guide-link", href: s.guide.url, target: "_blank", rel: "noreferrer noopener" }, icon("ext"), "Guide: " + s.guide.heading.replace(/`/g, "") + " (" + s.guide.file + ")"));
+    body.appendChild(readLink(s.guide, "Read this section: " + s.guide.heading.replace(/`/g, ""), "Back to step " + (idx + 1) + ": " + s.title));
     body.appendChild(h("div", { class: "prose" }, s.prose.map(function (p) { return h("p", { html: md(p) }); })));
     if (s.examples.length) {
       body.appendChild(h("p", { class: "section-label", text: "Run this" }));
@@ -776,6 +900,20 @@
     else pane.scrollTop = 0;
   }
 
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  // Remember the lesson step the reader is opened from, so the reader can offer a way back.
+  function rememberLesson(label) {
+    if (state.view === "lesson" && state.lesson) state.readerFrom = { hash: location.hash || "#/" + state.lesson.id, label: label, lesson: state.lesson.id };
+  }
+  function readLink(ref, text, backLabel) {
+    // A server started before the reader existed sends GitHub URLs only: keep those working.
+    if (ref.chapter === undefined) return h("a", { class: "guide-link", href: ref.url, target: "_blank", rel: "noopener noreferrer" }, icon("ext"), text);
+    return h("a", {
+      class: "guide-link", href: "#/read/" + pad2(ref.chapter) + (ref.anchor ? "/" + ref.anchor : ""),
+      onclick: function () { rememberLesson(backLabel); state.readerForceSplit = true; },
+    }, icon("book"), text);
+  }
+
   function nextChapterLink() {
     var ids = state.meta.lessons.map(function (l) { return l.id; });
     var i = ids.indexOf(state.lesson.id);
@@ -790,7 +928,7 @@
     var given = l.progress.quiz || {};
     var form = h("form", { class: "quiz", onsubmit: function (e) { e.preventDefault(); submitQuiz(form); } });
     form.appendChild(h("h2", { text: "Quiz" }));
-    form.appendChild(h("a", { class: "guide-link", href: l.guide.url.split("#")[0], target: "_blank", rel: "noreferrer noopener" }, icon("ext"), "Read the chapter first: " + l.guide.file));
+    form.appendChild(readLink(l.guide.chapter === undefined ? { url: String(l.guide.url).split("#")[0] } : { chapter: l.guide.chapter, anchor: "" }, "Read the chapter first: " + l.guide.file, "Back to the quiz"));
     form.appendChild(h("p", { class: "prose", html: md("The same questions as `make check-" + String(l.number).padStart(2, "0") + "`, with the same explanations. No database needed.") }));
     l.quiz.forEach(function (q) {
       var fs = h("fieldset", null, h("legend", null, h("span", { class: "num", text: q.id }), h("span", { text: q.question })));
@@ -934,11 +1072,49 @@
   // ------------------------------------------------------------ routing
   function route() {
     var parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+    if (parts[0] === "read" || parts[0] === "file") {
+      if (state.view !== "reader") state.readerLayout = state.readerForceSplit ? "split" : store.get("reader-layout", "wide") === "split" ? "split" : "wide";
+      state.readerForceSplit = false;
+      setView("reader");
+      if (parts[0] === "read") Studio.reader.open(parts[1] || "00", parts.slice(2).join("/"));
+      else Studio.reader.openFile(parts.slice(1).join("/"));
+      return;
+    }
+    var back = state.view === "reader" && state.lessonHash === location.hash && state.lessonHash !== "#/";
+    setView("lesson");
+    document.title = "NoSQL lesson studio";
+    if (back && state.lesson) { renderNav(); return; } // the lesson is still in the page, as it was left
+    state.lessonHash = location.hash || "#/";
     if (!parts.length) { renderHome(); return; }
     if (!lessonMeta(parts[0])) { location.hash = "#/"; return; }
     openLesson(parts[0], parts[1]);
   }
   window.addEventListener("hashchange", route);
+  document.querySelectorAll(".skip-link").forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var target = document.getElementById(a.getAttribute("href").slice(1));
+      if (!target) return;
+      e.preventDefault();
+      target.focus();
+    });
+  });
+
+  // ------------------------------------------------------------ shared with reader.js
+  var Studio = window.NosqlStudio = window.NosqlStudio || {};
+  Studio.h = h;
+  Studio.clear = clear;
+  Studio.api = api;
+  Studio.icon = icon;
+  Studio.store = store;
+  Studio.state = state;
+  Studio.toast = toast;
+  Studio.gate = gate;
+  Studio.renderNav = renderNav;
+  Studio.setReaderLayout = setReaderLayout;
+  Studio.openInConsole = openInConsole;
+  Studio.consoleInfo = function (id) { return consoleInfo(id); };
+  Studio.lessonMeta = lessonMeta;
+  Studio.guideShort = guideShort;
 
   // ------------------------------------------------------------ start
   updateThemeButton();
@@ -948,7 +1124,6 @@
   }
   api("/api/meta").then(function (meta) {
     state.meta = meta;
-    $("link-guide").href = meta.repo + "/tree/main/guide";
     $("link-explorer").href = meta.explorer;
     state.console = store.get("console", "mongo");
     if (!location.hash) {

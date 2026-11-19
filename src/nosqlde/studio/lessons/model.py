@@ -50,8 +50,16 @@ class GuideRef:
         return GUIDE_FILES[self.chapter]
 
     @property
+    def anchor(self) -> str:
+        return slug(self.heading)
+
+    @property
     def url(self) -> str:
-        return f"{REPO}/blob/main/guide/{self.file}#{slug(self.heading)}"
+        return f"{REPO}/blob/main/guide/{self.file}#{self.anchor}"
+
+    def public(self) -> dict[str, Any]:
+        """Where the studio's reader opens it: #/read/<chapter>/<anchor>."""
+        return {"chapter": self.chapter, "anchor": self.anchor, "heading": self.heading, "file": self.file}
 
 
 @dataclass(frozen=True)
@@ -164,7 +172,7 @@ class Step:
             "id": self.id,
             "title": self.title,
             "prose": list(self.prose),
-            "guide": {"url": self.guide.url, "heading": self.guide.heading, "file": self.guide.file},
+            "guide": self.guide.public(),
             "examples": [
                 {"title": e.title, "console": e.console, "code": e.code, "note": e.note}
                 for e in self.examples
@@ -237,7 +245,7 @@ class Lesson:
     def public(self) -> dict[str, Any]:
         return {
             **self.summary_json(),
-            "guide": {"url": self.guide.url, "file": self.guide.file},
+            "guide": self.guide.public(),
             "consoles": list(self.consoles),
             "services": list(self.services),
             "has_prepare": self.prepare is not None,

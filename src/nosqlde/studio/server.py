@@ -18,14 +18,14 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from nosqlde import __version__
 from nosqlde.clients import ServiceUnavailable
-from nosqlde.studio import checking
+from nosqlde.studio import checking, reader, repofiles
 from nosqlde.studio.lessons.model import REPO, Job
 from nosqlde.studio.paths import progress_file, repo_root
 from nosqlde.studio.progress import Progress
@@ -135,7 +135,38 @@ def create_app(
                 for lesson in LESSONS.values()
             ],
             "display_rows": DISPLAY_ROWS,
+            "guide": reader.chapter_list(),
         }
+
+    @app.get("/api/guide/{chapter_id}")
+    def guide_chapter(chapter_id: str) -> dict[str, Any]:
+        """A guide chapter rendered for the reader (from guide/NN-*.md, on every request)."""
+        numbers = {c["id"]: c["number"] for c in reader.chapter_list()}
+        if chapter_id not in numbers:
+            raise HTTPException(404, f"no chapter {chapter_id!r}")
+        return reader.chapter_json(numbers[chapter_id])
+
+    @app.get("/api/search")
+    def guide_search(q: str = Query("", max_length=200)) -> dict[str, Any]:
+        return {"query": q, "results": reader.search(q)}
+
+    @app.get("/api/file")
+    def repo_file(path: str = Query(..., max_length=400)) -> dict[str, Any]:
+        """A repository file or directory, read-only (see nosqlde.studio.repofiles)."""
+        try:
+            return repofiles.read(path, repo_root())
+        except repofiles.FileRefused as err:
+            raise HTTPException(err.status, str(err)) from err
+
+    @app.get("/repo-img/{path:path}", include_in_schema=False)
+    def repo_image(path: str) -> FileResponse:
+        """An image the guide shows (guide/ or docs/ only). Outside /api/ because an <img>
+        cannot send the token; Host and Origin are still checked."""
+        try:
+            real, media = repofiles.image(path, repo_root())
+        except repofiles.FileRefused as err:
+            raise HTTPException(404, "No such image.") from err
+        return FileResponse(real, media_type=media)
 
     @app.get("/api/lessons/{lesson_id}")
     def lesson(lesson_id: str) -> dict[str, Any]:

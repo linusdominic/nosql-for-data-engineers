@@ -12,7 +12,7 @@ ALL_PROFILES := --profile ch02 --profile ch03 --profile ch04 --profile ch05 --pr
 
 .DEFAULT_GOAL := help
 .PHONY: help setup datagen ps logs down clean test test-unit test-integration lint format capstone \
-        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data studio
+        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data studio diagrams
 # lab-% and check-% are pattern rules; make skips pattern rules for .PHONY targets,
 # so they are deliberately not listed above.
 
@@ -65,6 +65,9 @@ STUDIO_PORT ?= 8790
 
 studio: ## Lessons with live consoles in the browser (start databases first: make up-NN)
 	$(RUN) nosqlde studio --port $(STUDIO_PORT)
+
+diagrams: ## Re-render the guide's mermaid diagrams to SVG for the studio's reader (needs Chrome)
+	$(RUN) python tools/render_diagrams.py
 
 # ---- explorer --------------------------------------------------------------------
 EXPLORER_PORT ?= 8099

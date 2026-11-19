@@ -32,6 +32,7 @@ make up-capstone up-03 up-05   # every database
 make test-integration          # every lab, every check against solutions/, the capstone,
                                # and every studio exercise (solution passes, wrong answers fail)
 make studio                    # the lesson studio on 127.0.0.1:8790
+make diagrams                  # after editing a mermaid diagram in guide/ (needs Chrome)
 make down
 ```
 
@@ -48,6 +49,13 @@ a reference solution, one to three hints and at least one plausible wrong answer
 `make test-integration` then checks that the solution passes and that every wrong answer,
 and a statement that does nothing, fails. Studio data comes from the lab's own loading
 code in `prepare.py`, so the numbers stay those of the guide.
+
+The studio's reader renders `guide/*.md` as it is, so a guide edit shows on the next page
+load. A link to another chapter (`03-key-value-redis.md#streams`) or to a repository
+file (`../src/nosqlde/flatten.py`) becomes a link inside the studio, and
+`tests/unit/test_studio_reader.py` fails on a link or anchor that leads nowhere. A
+mermaid diagram is shown from SVGs that `make diagrams` writes; the same test fails
+until they exist for the edited diagram.
 
 ## Pull requests
 

@@ -23,10 +23,11 @@ cd nosql-for-data-engineers
 make setup
 ```
 
-`make setup` runs `uv sync --python 3.12`, which creates `.venv/` and installs the 47
-packages pinned in `uv.lock` (version 0.3.0, which added the lesson studio's web server).
-On the author's machine (Apple silicon, macOS), with a fresh `.venv` but uv's download
-cache already warm, it took under a second (`Installed 47 packages in 105ms`). The first run on a new machine also downloads
+`make setup` runs `uv sync --python 3.12`, which creates `.venv/` and installs the 49
+packages pinned in `uv.lock` (version 0.4.0, whose lesson studio has a web server and a
+Markdown reader for this guide). On the author's machine (Apple silicon, macOS), with a
+fresh environment but uv's download cache already warm, it took under a second
+(`Installed 49 packages in 87ms`). The first run on a new machine also downloads
 Python 3.12 and the packages, which depends on your network.
 
 Check that the toolchain works without any database:
@@ -103,9 +104,9 @@ make up-02          # or make up-capstone up-05 for every database
 make studio         # prints http://127.0.0.1:8790/?token=...; open that address
 ```
 
-Each chapter becomes a lesson with steps. A step has a few paragraphs, a link to the
-section of the guide it comes from, "Run this" examples that load into the console and
-run with one click, and exercises. The console on the right talks to the real database
+Each chapter becomes a lesson with steps. A step has a few paragraphs, a **Read this
+section** link that opens the section of the guide it comes from inside the studio,
+"Run this" examples that load into the console and run with one click, and exercises. The console on the right talks to the real database
 in its own language: mongosh for MongoDB (a subset, interpreted in Python), redis-cli
 syntax for Redis, CQL for Cassandra (with `TRACING ON` and `CONSISTENCY`), PartiQL or a
 JSON API mode for DynamoDB Local, Cypher for Neo4j, and SQL over the lake for DuckDB.
@@ -115,6 +116,9 @@ How to use it next to the chapters:
 
 - **Read the chapter section first, then do its step.** The studio keeps the prose short
   on purpose; the guide has the explanation and the lab output the studio's numbers match.
+  **Read** at the top of the studio shows every chapter of this guide, with its diagrams
+  and a table of contents; a database statement in it has **Open in console**, which
+  loads it into the right console for you to run. `/` searches every chapter.
 - **Press Prepare data once per chapter.** It loads that chapter's data with the lab's
   own code and the seeded generator, into names of its own (database `larkspur_studio`,
   Redis database 5, keyspace `larkspur_studio`, table `larkspur_studio`), so a lab or a

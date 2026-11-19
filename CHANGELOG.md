@@ -3,6 +3,41 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] - 2026-11-19
+
+### Added
+
+- The guide inside the lesson studio: **Read** at the top shows chapters 0 to 8, rendered
+  on the server from `guide/*.md` on each request (markdown-it-py, raw HTML escaped). A
+  table of contents that follows the scroll, copy-link heading anchors, reading
+  progress, previous and next chapter, search across chapters (`/`), scrollable tables,
+  lab output styled as output, light highlighting, and Copy on every code block.
+- **Open in console** on every database statement in the guide: tagged Cypher, CQL, SQL
+  and mongosh blocks, and untagged ones whose content can only belong to one console.
+  Shell and Python blocks are copy only.
+- Lessons open the reader instead of GitHub: **Read this section** on each step opens
+  the reader at that heading next to the console, with **Back to step**; **Read the
+  chapter** and the quizzes do the same. The reader can sit next to the console or take
+  the full width.
+- A read-only file viewer for repository files the guide names (`src/...`,
+  `exercises/...`), limited to the guide, code, exercises, solutions, tests, tools and
+  docs; the studio's lesson files, which hold the solutions, are left out.
+- The three mermaid diagrams as SVG, light and dark, pre-rendered by `make diagrams`
+  (`tools/render_diagrams.py`) with mermaid 12.3.0 (MIT), which the tool downloads
+  from npm on first use and checks against a pinned sha256. No diagram library runs in the page, so the Content-Security-Policy is
+  unchanged.
+- 85 unit tests: every chapter renders, every in-studio link and anchor resolves, raw
+  HTML is escaped, the file viewer refuses traversal, hidden files and symlinks out,
+  console detection, and every diagram has its SVGs.
+- README screenshots of the reader in light and dark; the lesson screenshots retaken.
+
+### Changed
+
+- New dependency: markdown-it-py 4.2.0 (with mdurl 0.1.2).
+- The top bar has a Lesson and Read switch and a search button; the link to the guide
+  on GitHub is gone.
+- The skip links focus the lesson, reader or console without changing the page's route.
+
 ## [0.3.0] - 2026-11-19
 
 ### Added

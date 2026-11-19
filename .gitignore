@@ -24,3 +24,6 @@ htmlcov/
 .idea/
 .vscode/
 *.swp
+
+# make diagrams downloads mermaid here
+tools/.cache/

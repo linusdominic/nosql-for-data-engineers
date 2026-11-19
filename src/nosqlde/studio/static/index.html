@@ -11,9 +11,10 @@
 <script src="/static/theme.js"></script>
 <link rel="stylesheet" href="/static/styles.css">
 <script src="/static/app.js" defer></script>
+<script src="/static/reader.js" defer></script>
 </head>
 <body>
-<a class="skip-link" href="#lesson">Skip to the lesson</a>
+<a class="skip-link" href="#lesson" id="skip-main">Skip to the lesson</a>
 <a class="skip-link" href="#editor">Skip to the console</a>
 
 <header class="topbar">
@@ -21,10 +22,17 @@
     <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
     <span class="brand-text">NoSQL lesson studio</span>
   </a>
+  <div class="mode-switch" role="group" aria-label="Lesson or guide">
+    <a class="mode" id="mode-lesson" href="#/">Lesson</a>
+    <a class="mode" id="mode-read" href="#/read/00">Read</a>
+  </div>
   <nav class="chapters" aria-label="Chapters"><ol id="chapter-nav"></ol></nav>
   <div class="top-actions">
-    <a class="top-link optional" id="link-guide" href="#" target="_blank" rel="noreferrer noopener">Guide</a>
-    <a class="top-link optional" id="link-explorer" href="#" target="_blank" rel="noreferrer noopener">Explorer</a>
+    <button class="search-btn" id="search-open" type="button" aria-haspopup="dialog" aria-controls="search" title="Search the guide (/)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+      <span class="search-label">Search the guide</span><kbd>/</kbd>
+    </button>
+    <a class="top-link optional ext" id="link-explorer" href="#" target="_blank" rel="noopener noreferrer" title="The explorer, on GitHub Pages (opens in a new tab)">Explorer</a>
     <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
     </button>
@@ -36,7 +44,12 @@
     <div class="lesson-inner" id="lesson-inner"><p class="muted">Loading the studio...</p></div>
   </section>
 
-  <section class="pane console-pane" aria-label="Console">
+  <section class="pane reader-pane" id="reader" aria-label="Guide reader" tabindex="-1" hidden>
+    <div class="reader-bar" id="reader-bar"></div>
+    <div class="reader-body" id="reader-body"></div>
+  </section>
+
+  <section class="pane console-pane" id="console-pane" aria-label="Console">
     <div class="console-tabs" role="tablist" aria-label="Consoles" id="console-tabs"></div>
     <div class="console-body">
       <div class="working" id="working" hidden>
@@ -67,6 +80,14 @@
     </div>
   </section>
 </main>
+
+<div class="search-pop" id="search" role="dialog" aria-label="Search the guide" hidden>
+  <label class="visually-hidden" for="search-input">Search the guide</label>
+  <input type="search" id="search-input" placeholder="Search every chapter, e.g. ALLOW FILTERING" autocomplete="off" spellcheck="false" aria-controls="search-results">
+  <ol class="search-results" id="search-results" aria-live="polite"></ol>
+  <p class="search-hint">Enter opens the first result. Esc closes.</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <footer class="statusbar" aria-label="Database status" id="statusbar"></footer>
 </body>
