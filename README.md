@@ -72,8 +72,9 @@ and a "which database?" walk through chapter 8. Measured numbers on it are real 
 output, each tied to the line of the guide it comes from (a unit test keeps them in
 sync); the interactive parts are simulations and say so.
 
-Open [`docs/explorer/index.html`](docs/explorer/index.html) in a browser (no server or
-install needed), or run `make explorer` and open the address it prints.
+**Open it online: [linusdominic.github.io/nosql-for-data-engineers](https://linusdominic.github.io/nosql-for-data-engineers/explorer/)**,
+or from a clone open [`docs/explorer/index.html`](docs/explorer/index.html) in a browser
+(no server or install needed), or run `make explorer` and open the address it prints.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/explorer-dark.png">
