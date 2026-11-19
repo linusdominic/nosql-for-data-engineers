@@ -1,0 +1,109 @@
+# One service per database. Each service belongs to the profile of the chapter that uses
+# it, plus the "capstone" profile. Start only what a chapter needs, for example:
+#
+#   docker compose --profile ch02 up -d --wait
+#
+# Host ports are deliberately uncommon so they do not clash with other local projects.
+# Change the left-hand side of a "ports" entry (and the matching NOSQLDE_* variable, see
+# src/nosqlde/config.py) if one of them is taken on your machine.
+#
+# There are no named volumes: data lives in the container and is thrown away by
+# `make down` (docker compose down -v). Every lab recreates the data it needs.
+
+name: nosqlde
+
+services:
+  mongo:
+    image: mongo:8.0.38
+    profiles: ["ch02", "capstone"]
+    # A single-node replica set: change streams and multi-document transactions need one.
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "27117:27017"
+    mem_limit: 1g
+    healthcheck:
+      # Initiates the replica set on first run, then reports healthy once this node is primary.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - >-
+          try { rs.status() } catch (e) {
+          rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]}) };
+          quit(db.hello().isWritablePrimary ? 0 : 1)
+      interval: 5s
+      timeout: 20s
+      retries: 30
+      start_period: 10s
+
+  redis:
+    image: redis:8.2.11-alpine
+    profiles: ["ch03", "capstone"]
+    # No config file: Redis runs with its built-in defaults, which chapter 3 inspects.
+    ports:
+      - "6479:6379"
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  cassandra:
+    image: cassandra:5.0.9
+    profiles: ["ch04", "capstone"]
+    environment:
+      # Cap the JVM so Cassandra fits next to the other databases on a laptop.
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+      CASSANDRA_CLUSTER_NAME: nosqlde
+      CASSANDRA_DC: dc1
+      CASSANDRA_RACK: rack1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+    ports:
+      - "9142:9042"
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT release_version FROM system.local' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 20s
+      retries: 30
+      start_period: 40s
+
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.2
+    profiles: ["ch05"]
+    # -inMemory: nothing is written to disk. -sharedDb: one database for every access key
+    # and region, so the region in your client config does not matter.
+    command: ["-Xmx256m", "-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb", "-disableTelemetry"]
+    ports:
+      - "8100:8000"
+    mem_limit: 512m
+    healthcheck:
+      # Any HTTP answer (DynamoDB Local returns 400 to a bare GET) means it is listening.
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://localhost:8000/ || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5.26.33-community
+    profiles: ["ch06", "capstone"]
+    environment:
+      # A local-only password for a throwaway container. Never reuse it anywhere else.
+      NEO4J_AUTH: neo4j/nosqlde-local-only
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 128m
+      NEO4J_dbms_usage__report_enabled: "false"
+    ports:
+      - "7574:7474"
+      - "7787:7687"
+    mem_limit: 1280m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
