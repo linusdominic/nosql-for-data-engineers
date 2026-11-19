@@ -12,7 +12,7 @@ ALL_PROFILES := --profile ch02 --profile ch03 --profile ch04 --profile ch05 --pr
 
 .DEFAULT_GOAL := help
 .PHONY: help setup datagen ps logs down clean test test-unit test-integration lint format capstone \
-        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data studio diagrams
+        up-02 up-03 up-04 up-05 up-06 up-capstone explorer explorer-data studio diagrams demo-video
 # lab-% and check-% are pattern rules; make skips pattern rules for .PHONY targets,
 # so they are deliberately not listed above.
 
@@ -68,6 +68,13 @@ studio: ## Lessons with live consoles in the browser (start databases first: mak
 
 diagrams: ## Re-render the guide's mermaid diagrams to SVG for the studio's reader (needs Chrome)
 	$(RUN) python tools/render_diagrams.py
+
+# Not part of CI: it needs Chrome, ffmpeg and every database. Playwright stays out of the
+# project's dependencies; uv adds it for this one run.
+DEMO_PORT ?= 8792
+
+demo-video: ## Re-record docs/media/studio-demo.mp4, its poster and GIF (needs Chrome, ffmpeg, every database)
+	$(RUN) --with playwright==1.56.0 python tools/record_demo.py --port $(DEMO_PORT)
 
 # ---- explorer --------------------------------------------------------------------
 EXPLORER_PORT ?= 8099

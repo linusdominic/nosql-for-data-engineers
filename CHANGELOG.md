@@ -3,6 +3,45 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- A demo video of the lesson studio, 2 minutes 54 seconds with a quiet CC0 music bed:
+  install, then chapter 2 (Prepare data, Run this, exercise 2.3 from FAIL to PASS with a
+  hint), the guide beside the console, a tour of chapters 3 to 8, search and the dark
+  theme. `docs/media/studio-demo.mp4`, served by GitHub Pages and linked from the README
+  with a poster and a short GIF. `make demo-video` (`tools/record_demo.py`) records it
+  again end to end against its own studio and progress file; it needs Chrome, ffmpeg and
+  every database, and runs Playwright through `uv run --with`, outside the project's
+  dependencies and outside CI.
+
+## [0.5.0] - 2026-11-19
+
+### Changed
+
+- A new look for the lesson studio, inspired by the documentation sites of the guide's
+  databases (notes and sources in `src/nosqlde/studio/static/DESIGN.md`). A forest green
+  top bar with Lesson, Read and the chapters as underlined tabs; white reading surfaces,
+  hairline borders and a near-black green dark theme designed on its own; system fonts,
+  with a serif for page titles.
+- Each database has its own accent, from its documentation's colour family: MongoDB
+  green, Redis red, Cassandra teal blue, DynamoDB orange, Neo4j blue and DuckDB yellow
+  (chapters 1 and 8 use the studio's green). It marks the console tabs, the chapter tabs
+  and their progress rings, a band at the top of each lesson, the progress bar, step
+  pills, exercise cards, tags, the reader's progress bar and contents, and the status
+  bar's dots. Text stays in neutral ink; every accent reaches 3:1 and every text colour
+  4.5:1 on the surfaces it uses, in both themes.
+- Restyled: buttons (a green primary), step pills, Run this cards, exercise cards with
+  state pills, PASS and FAIL panels (Expected above Got when the card is narrow), hints,
+  the quiz's answers, console results with sticky table heads and a JSON tree with
+  chevrons, the search dialog, toasts and the status bar (a down database shows a hollow
+  red ring, a tint and its `make` command).
+- The reader puts "On this page" on the right, styles blockquotes as notes, and gives
+  database code blocks a rule in the console's accent. The three diagrams were
+  re-rendered with the new colours.
+- README screenshots retaken in the new style.
+
 ## [0.4.0] - 2026-11-19
 
 ### Added

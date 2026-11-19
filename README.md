@@ -42,6 +42,19 @@ example, then do the exercises in the console and press **Check my answer**: it 
 statement and the reference solution against the database and says PASS or FAIL, with
 what was expected and what you got.
 
+**See it in action:** a 2 minute 54 second walk-through, from `git clone` to an exercise
+that fails, gets a hint and passes, then a tour of chapters 3 to 8, search and the dark
+theme. Click the picture to play it.
+
+[![The lesson studio demo video: its title card, with exercise 2.3 passed in the studio. Click to play the video.](docs/img/studio-demo-poster.jpg)](https://linusdominic.github.io/nosql-for-data-engineers/media/studio-demo.mp4)
+
+[Watch the video](https://linusdominic.github.io/nosql-for-data-engineers/media/studio-demo.mp4)
+(MP4, 26 MB, quiet music, no voice) or open [the file in this repository](docs/media/studio-demo.mp4).
+`make demo-video` records it again after a change to the studio
+([tools/record_demo.py](tools/record_demo.py)).
+
+<img alt="Exercise 2.3 in the studio: the answer is corrected in the MongoDB console to createIndex with status first, then submitted_at; Check my answer turns the FAIL into PASS, with the expected and actual plan side by side." src="docs/img/studio-demo.gif" width="640">
+
 ```bash
 make setup
 make up-capstone up-05   # every database; or only the chapter's, e.g. make up-02

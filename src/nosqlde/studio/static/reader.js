@@ -104,7 +104,11 @@
     if (cur && cur.kind === "chapter") scrolls[cur.id] = scroller().scrollTop;
   }
 
+  // The chapter's database accent on the reader (its progress bar, contents and headings).
+  function setAccent(cls) { pane().className = "pane reader-pane " + cls; }
+
   function draw(data) {
+    setAccent(S.accentFor("ch" + data.id));
     renderBar(barOpts(data));
     var root = clear(body());
     root.className = "reader-body";
@@ -293,6 +297,7 @@
     saveScroll();
     S.state.reading = { file: path };
     cur = { kind: "file", path: path };
+    setAccent("acc-none");
     S.renderNav();
     renderBar(fileBarOpts(path));
     clear(body()).appendChild(h("div", { class: "doc file-doc" }, h("p", { class: "muted", text: "Loading " + path + "..." })));
@@ -388,7 +393,7 @@
         var a = h("a", { href: "#/read/" + String(r.chapter).padStart(2, "0") + (r.anchor ? "/" + r.anchor : ""), "data-first": i === 0 ? "1" : null, onclick: closeSearch },
           h("span", { class: "sr-where" }, h("span", { class: "num", text: String(r.chapter).padStart(2, "0") }), h("strong", null, marked(r.heading, terms))),
           h("span", { class: "sr-snippet" }, marked(r.snippet, terms)));
-        results.appendChild(h("li", null, a));
+        results.appendChild(h("li", { class: S.accentFor("ch" + String(r.chapter).padStart(2, "0")) }, a));
       });
     }).catch(function (err) {
       if (seq !== searchSeq) return;

@@ -6,6 +6,8 @@
   var TOKEN_KEY = "nosql-studio-token";
   var THEME_KEY = "nosql-studio-theme";
   var ACCENT = { mongo: "acc-mongo", redis: "acc-redis", cql: "acc-cql", dynamodb: "acc-dynamodb", cypher: "acc-cypher", duckdb: "acc-duckdb" };
+  // the status bar's service ids, to the same accents
+  var SERVICE_ACCENT = { mongo: "acc-mongo", redis: "acc-redis", cassandra: "acc-cql", dynamodb: "acc-dynamodb", neo4j: "acc-cypher", duckdb: "acc-duckdb" };
   var IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   var LAB_LESSONS = { ch02: 1, ch03: 1, ch04: 1, ch05: 1, ch06: 1 };
 
@@ -401,6 +403,7 @@
     $("lang").textContent = info.language;
     editor.setAttribute("placeholder", info.placeholder || "");
     $("subset-help").hidden = id !== "mongo";
+    $("console-pane").className = "pane console-pane " + (ACCENT[id] || "acc-none");
     renderTabs();
     if (!state.active) setEditor(store.get(draftKey(), ""));
     var last = state.lastResults && state.lastResults[id];
@@ -598,7 +601,7 @@
     if (state.view === "reader") {
       var reading = state.reading || {};
       (state.meta.guide || []).forEach(function (c) {
-        ol.appendChild(h("li", null, h("a", { href: "#/read/" + c.id, "aria-current": reading.chapter === c.id ? "page" : null, title: "Chapter " + c.id + ": " + c.title },
+        ol.appendChild(h("li", null, h("a", { href: "#/read/" + c.id, class: accentFor("ch" + c.id), "aria-current": reading.chapter === c.id ? "page" : null, title: "Chapter " + c.id + ": " + c.title },
           h("span", { class: "num", text: c.id }),
           h("span", { text: guideShort(c) }))));
       });
@@ -607,7 +610,7 @@
     state.meta.lessons.forEach(function (l) {
       var p = pct(l.progress);
       var current = state.lesson && state.lesson.id === l.id;
-      ol.appendChild(h("li", null, h("a", { href: "#/" + l.id, "aria-current": current ? "page" : null, title: l.title + " (" + l.progress.done + "/" + l.progress.total + ")" },
+      ol.appendChild(h("li", null, h("a", { href: "#/" + l.id, class: accentFor(l.id), "aria-current": current ? "page" : null, title: l.title + " (" + l.progress.done + "/" + l.progress.total + ")" },
         h("span", { class: "ring" + (p === 100 ? " full" : ""), style: "--p:" + p, "aria-hidden": "true" }),
         h("span", { class: "num", text: String(l.number).padStart(2, "0") }),
         h("span", { text: shortTitle(l) }))));
@@ -709,8 +712,9 @@
     renderTabs();
     renderStatus();
     var inner = clear($("lesson-inner"));
+    inner.className = "lesson-inner acc-none";
     inner.appendChild(h("div", { class: "lesson-head" },
-      h("p", { class: "kicker" }, h("span", { class: "dot", style: "--accent: var(--aqua)" }), "Lesson studio"),
+      h("p", { class: "kicker" }, h("span", { class: "dot" }), "Lesson studio"),
       h("h1", { text: "Learn each database by running it" }),
       h("p", { class: "lede", text: "Every chapter of the guide, step by step, with consoles connected to the real databases on your machine. Run the examples, do the exercises, and check them against the reference solutions." })));
     inner.appendChild(h("div", { class: "panel" },
@@ -1061,7 +1065,7 @@
     state.status.forEach(function (s) {
       var isNeeded = needed.indexOf(s.id) >= 0;
       var text = s.up ? (s.detail ? s.detail : "up") : "down";
-      var item = h("span", { class: "svc " + (s.up ? "up" : "down") + (isNeeded ? " needed" : ""), title: s.label + (s.port ? " on port " + s.port : "") + ": " + text + (s.up ? "" : ". Start it with " + s.make) },
+      var item = h("span", { class: "svc " + (SERVICE_ACCENT[s.id] || "acc-none") + " " + (s.up ? "up" : "down") + (isNeeded ? " needed" : ""), title: s.label + (s.port ? " on port " + s.port : "") + ": " + text + (s.up ? "" : ". Start it with " + s.make) },
         h("span", { class: "led", "aria-hidden": "true" }), h("span", { text: s.label }), h("span", { class: "visually-hidden", text: " is " + text }),
         !s.up ? h("span", { class: "make", text: s.make }) : s.detail ? h("span", { class: "make", text: s.detail }) : null);
       bar.appendChild(item);
@@ -1115,6 +1119,7 @@
   Studio.consoleInfo = function (id) { return consoleInfo(id); };
   Studio.lessonMeta = lessonMeta;
   Studio.guideShort = guideShort;
+  Studio.accentFor = accentFor;
 
   // ------------------------------------------------------------ start
   updateThemeButton();
