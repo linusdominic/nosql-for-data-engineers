@@ -376,62 +376,6 @@ in `exercises/` that the check names.
 **Python version errors**: run commands through `make` or `uv run`; they use the
 project's Python 3.12, whatever your system Python is.
 
-## What is not verified
-
-- **One machine, plus CI.** Everything above ran on macOS on Apple silicon. The CI run
-  below repeats the labs, checks and capstone on Linux (GitHub's `ubuntu-24.04`, x86-64);
-  Windows was not tried.
-- **CI.** `.github/workflows/ci.yml` runs lint, unit tests and the integration tests
-  (every lab, check and the capstone, with the same compose file) on GitHub Actions. The
-  first run on GitHub passed on 19 November 2026: lint and unit tests in 19 s, the
-  integration job in 2 min 49 s including starting the containers.
-- **Single-node databases only.** Replication, failover, sharding, repair and
-  multi-region behaviour are explained from the documentation, not demonstrated.
-- **No cloud services.** DynamoDB ran only as DynamoDB Local; managed services (Atlas,
-  ElastiCache, Keyspaces, Astra, AuraDB) are described, not used. Chapter 5 lists what
-  DynamoDB Local does not emulate.
-- **No benchmarks.** Timings are from one laptop with small data and only show orders of
-  magnitude within a run.
-- **Version-specific statements** were checked against the official documentation for the
-  pinned versions where the guide cites it, and demonstrated by the labs where the guide
-  shows output; anything else is marked in the chapter's own "What is not verified" list.
-- **Run-to-run variation:** Redis eviction counts, Neo4j db-hit counts, stream ids and
-  timings differ slightly between runs; the guide says so where it quotes them.
-- **The lesson studio** ran in Google Chrome only (headless, on macOS); Firefox, Safari,
-  Windows and screen readers were not tried. Keyboard use (Ctrl/Cmd+Enter, history, Esc
-  to leave the editor, Tab order, arrow keys across the console tabs) was checked in
-  that headless Chrome. Its integration tests (every exercise against the real
-  databases) passed on GitHub Actions on 19 November 2026 (Linux). Its known limits:
-  - The MongoDB console is a mongosh subset interpreted in Python: `db.<collection>`
-    methods (find, findOne, aggregate, countDocuments, distinct, insert, update, replace,
-    delete, index methods, drop), cursor `sort`, `limit`, `skip`, `project`, `explain`,
-    `show collections`, `db.getCollectionNames()` and `db.createCollection()`, with
-    JavaScript literals as arguments. No variables, functions, arithmetic, loops, `use`,
-    or `explain()` on an aggregation; anything else is refused with its line and column.
-  - DynamoDB Local 3.3.2 does not return ConsumedCapacity for PartiQL (`ExecuteStatement`);
-    the console says so, and its JSON mode reports capacity for every call. JSON mode
-    offers data-plane calls plus DescribeTable and TTL, not CreateTable or DeleteTable.
-  - The Redis console reads replies as RESP2, like redis-cli; redis-py does not say
-    whether a string reply was a status or a bulk string, so `OK`, `PONG`, `QUEUED` and
-    the replies of TYPE and BGSAVE print without quotes and every other string in quotes.
-    Commands that change database, block, affect the whole server or write files on it
-    are refused, and `CONFIG SET` is limited to the settings chapter 3 changes.
-  - The Cassandra console lets the server timestamp writes, so a plain write and an LWT
-    are ordered by one clock; with the driver's default client timestamps, the Docker
-    VM's clock and the laptop's disagreed and the LWT exercises' checks were flaky.
-  - The DuckDB console reads only files under `lake/` and refuses COPY, ATTACH, SET,
-    PRAGMA and extension installs.
-  - Results show the first 200 rows; checks read up to 20,000.
-  - One learner at a time: progress is one file, and running a lab or the capstone resets
-    data that a lesson may be using (chapter 3's eviction step evicts the studio's keys;
-    Neo4j has one database). Prepare data puts a chapter back.
-  - The reader's diagrams are SVGs measured with the system font on macOS; on another
-    system the text in a box may sit slightly differently. An edited diagram shows its
-    source until `make diagrams` runs again (a unit test fails until then).
-  - Open in console is offered only where the block's language is clear: tagged Cypher,
-    CQL, SQL and mongosh, and untagged statements that can only belong to one console.
-    Lab output is never offered, even when it quotes a statement.
-
 ## Licence
 
 MIT, see [LICENSE](LICENSE). Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md).
